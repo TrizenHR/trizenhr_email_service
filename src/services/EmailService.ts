@@ -66,8 +66,8 @@ export class EmailService {
         attachments: options.attachments,
       });
 
-      // Log email
-      await this.logEmail({
+      // Log email (non-blocking)
+      this.logEmail({
         to: Array.isArray(options.to) ? options.to : [options.to],
         subject: options.subject,
         template: options.template,
@@ -96,8 +96,8 @@ export class EmailService {
         error: error.message,
       });
 
-      // Log failed email
-      await this.logEmail({
+      // Log failed email (non-blocking)
+      this.logEmail({
         to: Array.isArray(options.to) ? options.to : [options.to],
         subject: options.subject,
         template: options.template,
@@ -114,15 +114,14 @@ export class EmailService {
     }
   }
 
-  private static async logEmail(data: any) {
-    try {
-      await EmailLog.create({
-        ...data,
-        sentAt: new Date(),
-      });
-    } catch (error: any) {
+  private static logEmail(data: any) {
+    // Don't await - log asynchronously to avoid blocking email sending
+    EmailLog.create({
+      ...data,
+      sentAt: new Date(),
+    }).catch((error: any) => {
       logger.error('Failed to log email', { error: error.message });
-    }
+    });
   }
 
   // Convenience methods

@@ -3,8 +3,16 @@ import { EmailTemplate } from '../types';
 export interface PasswordResetTemplateData {
   name?: string;
   resetLink: string;
-  expiresAt?: string; // Optional expiry time
+  expiresAt?: string;
 }
+
+// ExtraHand Logo SVG (inline)
+const extrahandLogoSVG = `
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="48" height="48" rx="8" fill="#F59E0B"/>
+  <text x="24" y="32" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="white" text-anchor="middle">EH</text>
+</svg>
+`;
 
 export const passwordResetTemplate: EmailTemplate = {
   name: 'password_reset',
@@ -18,24 +26,26 @@ export const passwordResetTemplate: EmailTemplate = {
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <title>Reset Your ExtraHand Admin Password</title>
 </head>
-<body style="margin: 0; padding: 0; background: linear-gradient(to bottom right, #f9fafb, #fef3c7); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background: linear-gradient(to bottom right, #f9fafb, #fef3c7); padding: 40px 20px;">
+<body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5; padding: 40px 20px;">
     <tr>
       <td align="center" style="padding: 0;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); overflow: hidden;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; background: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
           
           <!-- Header -->
           <tr>
-            <td style="background: linear-gradient(to right, #fef3c7, #fed7aa); padding: 40px 40px 30px; text-align: center; border-bottom: 1px solid #fde68a;">
+            <td style="background-color: #ffffff; padding: 40px 40px 30px; text-align: center; border-bottom: 1px solid #e5e7eb;">
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
                   <td align="center" style="padding-bottom: 20px;">
-                    <img src="https://extrahand.in/logo.png" alt="ExtraHand Logo" width="80" height="80" style="display: block; border-radius: 8px;">
+                    ${extrahandLogoSVG}
                   </td>
                 </tr>
                 <tr>
                   <td align="center">
-                    <h1 style="margin: 0; color: #92400e; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">Password Reset Request</h1>
+                    <h1 style="margin: 0; font-size: 24px; font-weight: 600; color: #1f2937; line-height: 1.3;">
+                      Password Reset Request
+                    </h1>
                   </td>
                 </tr>
               </table>
@@ -61,7 +71,7 @@ export const passwordResetTemplate: EmailTemplate = {
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
                   <td align="center" style="padding-bottom: 30px;">
-                    <a href="${data.resetLink}" style="display: inline-block; background: linear-gradient(to right, #f59e0b, #d97706); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.3);">
+                    <a href="${data.resetLink}" style="display: inline-block; background-color: #F59E0B; color: #ffffff !important; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: 600; font-size: 16px;">
                       Reset Password
                     </a>
                   </td>
@@ -76,9 +86,15 @@ export const passwordResetTemplate: EmailTemplate = {
               </p>
 
               ${data.expiresAt ? `
-              <p style="margin: 0 0 20px; color: #dc2626; font-size: 14px; line-height: 1.6;">
-                <strong>⚠️ Important:</strong> This link will expire on ${data.expiresAt}.
-              </p>
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td style="background-color: #fffbeb; border-left: 3px solid #F59E0B; border-radius: 4px; padding: 16px; margin-bottom: 20px;">
+                    <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.5;">
+                      <strong>Important:</strong> This link will expire on ${data.expiresAt}.
+                    </p>
+                  </td>
+                </tr>
+              </table>
               ` : ''}
 
               <p style="margin: 0; color: #6b7280; font-size: 14px; line-height: 1.6;">
@@ -89,7 +105,7 @@ export const passwordResetTemplate: EmailTemplate = {
 
           <!-- Footer -->
           <tr>
-            <td style="background: #f9fafb; padding: 30px 40px; text-align: center; border-top: 1px solid #e5e7eb;">
+            <td style="background-color: #f9fafb; padding: 30px 40px; text-align: center; border-top: 1px solid #e5e7eb;">
               <p style="margin: 0 0 10px; color: #6b7280; font-size: 12px; line-height: 1.5;">
                 &copy; ${new Date().getFullYear()} ExtraHand. All rights reserved.
               </p>
@@ -113,7 +129,7 @@ We received a request to reset your password for your ExtraHand Admin account. I
 To reset your password, please click the link below:
 ${data.resetLink}
 
-${data.expiresAt ? `⚠️ Important: This link will expire on ${data.expiresAt}.` : ''}
+${data.expiresAt ? `Important: This link will expire on ${data.expiresAt}.` : ''}
 
 If you have any questions or concerns, please contact our support team.
 

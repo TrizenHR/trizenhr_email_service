@@ -47,9 +47,10 @@ export class SMTPProvider {
         ciphers: 'SSLv3',
         rejectUnauthorized: false,
       };
-      config.connectionTimeout = 60000;
-      config.greetingTimeout = 30000;
-      config.socketTimeout = 60000;
+      // Reduced timeouts for faster failure detection and better latency
+      config.connectionTimeout = 10000; // Reduced from 60000 to 10 seconds
+      config.greetingTimeout = 5000;   // Reduced from 30000 to 5 seconds
+      config.socketTimeout = 15000;     // Reduced from 60000 to 15 seconds
 
       logger.info('SMTP Provider initialized with Microsoft optimizations', {
         host: this.env.SMTP_HOST,

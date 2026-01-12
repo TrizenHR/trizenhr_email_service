@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { EmailService } from '../services/EmailService';
 import { asyncHandler } from '../middleware/errorHandler';
+import logger from '../config/logger';
 
 export class EmailController {
   /**
@@ -8,8 +9,20 @@ export class EmailController {
    * POST /api/v1/email/send
    */
   static sendEmail = asyncHandler(async (req: Request, res: Response) => {
-    const result = await EmailService.sendEmail(req.body);
-    return res.json(result);
+    // Return immediately - process email in background
+    res.json({
+      success: true,
+      message: 'Email queued for sending'
+    });
+    
+    // Process email asynchronously (don't await)
+    EmailService.sendEmail(req.body).catch((error: any) => {
+      logger.error('Background email send failed', {
+        to: req.body.to,
+        subject: req.body.subject,
+        error: error.message
+      });
+    });
   });
 
   /**
@@ -26,15 +39,27 @@ export class EmailController {
       });
     }
     
-    const result = await EmailService.sendAdminInviteEmail(
+    // Return immediately - process email in background
+    res.json({
+      success: true,
+      message: 'Email queued for sending'
+    });
+    
+    // Process email asynchronously (don't await)
+    EmailService.sendAdminInviteEmail(
       email,
       role,
       inviteLink,
       new Date(expiresAt),
       team,
       department
-    );
-    return res.json(result);
+    ).catch((error: any) => {
+      logger.error('Background admin invite email send failed', {
+        email,
+        role,
+        error: error.message
+      });
+    });
   });
 
   /**
@@ -51,8 +76,20 @@ export class EmailController {
       });
     }
     
-    const result = await EmailService.sendAccountCreatedEmail(email, name, phone);
-    return res.json(result);
+    // Return immediately - process email in background
+    res.json({
+      success: true,
+      message: 'Email queued for sending'
+    });
+    
+    // Process email asynchronously (don't await)
+    EmailService.sendAccountCreatedEmail(email, name, phone).catch((error: any) => {
+      logger.error('Background account created email send failed', {
+        email,
+        name,
+        error: error.message
+      });
+    });
   });
 
   /**
@@ -69,13 +106,24 @@ export class EmailController {
       });
     }
     
-    const result = await EmailService.sendPasswordResetEmail(
+    // Return immediately - process email in background
+    res.json({
+      success: true,
+      message: 'Email queued for sending'
+    });
+    
+    // Process email asynchronously (don't await)
+    EmailService.sendPasswordResetEmail(
       email,
       resetLink,
       name,
       expiresAt ? new Date(expiresAt) : undefined
-    );
-    return res.json(result);
+    ).catch((error: any) => {
+      logger.error('Background password reset email send failed', {
+        email,
+        error: error.message
+      });
+    });
   });
 
   /**
