@@ -23,6 +23,8 @@ export class EmailController {
         error: error.message
       });
     });
+    
+    return;
   });
 
   /**
@@ -60,6 +62,8 @@ export class EmailController {
         error: error.message
       });
     });
+    
+    return;
   });
 
   /**
@@ -90,6 +94,8 @@ export class EmailController {
         error: error.message
       });
     });
+    
+    return;
   });
 
   /**
@@ -124,6 +130,8 @@ export class EmailController {
         error: error.message
       });
     });
+    
+    return;
   });
 
   /**
