@@ -17,95 +17,69 @@ export const passwordResetTemplate: EmailTemplate = {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <title>Reset Your ExtraHand Admin Password</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5; padding: 40px 20px;">
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f5f5f5;padding:32px 16px;">
     <tr>
-      <td align="center" style="padding: 0;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; background: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+      <td align="center">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;background:#ffffff;border-radius:10px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.08);">
           
-          <!-- Header -->
           <tr>
-            <td style="background-color: #ffffff; padding: 40px 40px 30px; text-align: center; border-bottom: 1px solid #e5e7eb;">
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                <tr>
-                  <td align="center" style="padding-bottom: 20px;">
-                    ${EXTRAHAND_LOGO_SVG}
-                  </td>
-                </tr>
-                <tr>
-                  <td align="center">
-                    <h1 style="margin: 0; font-size: 24px; font-weight: 600; color: #1f2937; line-height: 1.3;">
-                      Password Reset Request
-                    </h1>
-                  </td>
-                </tr>
-              </table>
+            <td style="background:#0F172A;color:#fff;padding:12px 24px;font-size:13px;letter-spacing:0.3px;text-align:center;">
+              ExtraHand Admin
             </td>
           </tr>
 
-          <!-- Content -->
           <tr>
-            <td style="padding: 40px;">
-              <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
+          <tr>
+            <td style="padding:32px 32px 20px;text-align:center;border-bottom:1px solid #e5e7eb;">
+              <div style="margin-bottom:16px;">${EXTRAHAND_LOGO_SVG}</div>
+              <h1 style="margin:0;font-size:24px;font-weight:700;color:#111827;">Password reset request</h1>
+              <p style="margin:8px 0 0;font-size:14px;color:#6b7280;">Secure link to update your credentials</p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:28px 32px;">
+              <p style="margin:0 0 18px;color:#374151;font-size:16px;line-height:1.6;">
                 Hello ${data.name || 'there'},
               </p>
-              
-              <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
-                We received a request to reset your password for your ExtraHand Admin account. If you didn't make this request, you can safely ignore this email.
+              <p style="margin:0 0 18px;color:#374151;font-size:16px;line-height:1.6;">
+                We received a request to reset your ExtraHand Admin password. If you didn't request this, you can ignore this email.
               </p>
 
-              <p style="margin: 0 0 30px; color: #374151; font-size: 16px; line-height: 1.6;">
-                To reset your password, please click the button below:
-              </p>
-
-              <!-- Button -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                 <tr>
-                  <td align="center" style="padding-bottom: 30px;">
-                    <a href="${data.resetLink}" style="display: inline-block; background-color: #F59E0B; color: #ffffff !important; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: 600; font-size: 16px;">
+                  <td align="center" style="padding:18px 0 12px;">
+                    <a href="${data.resetLink}" style="display:inline-block;background:#F59E0B;color:#fff !important;text-decoration:none;padding:14px 30px;border-radius:8px;font-weight:700;font-size:16px;">
                       Reset Password
                     </a>
                   </td>
                 </tr>
               </table>
 
-              <p style="margin: 0 0 20px; color: #6b7280; font-size: 14px; line-height: 1.6;">
-                Or copy and paste this link into your browser:
+              <p style="margin:0 0 12px;color:#6b7280;font-size:14px;line-height:1.6;text-align:center;">
+                If the button doesn't work, use this link:
               </p>
-              <p style="margin: 0 0 30px; color: #3b82f6; font-size: 14px; line-height: 1.6; word-break: break-all;">
+              <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:12px;font-size:12px;color:#374151;font-family:monospace;word-break:break-all;text-align:center;">
                 ${data.resetLink}
-              </p>
+              </div>
 
               ${data.expiresAt ? `
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                <tr>
-                  <td style="background-color: #fffbeb; border-left: 3px solid #F59E0B; border-radius: 4px; padding: 16px; margin-bottom: 20px;">
-                    <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.5;">
-                      <strong>Important:</strong> This link will expire on ${data.expiresAt}.
-                    </p>
-                  </td>
-                </tr>
-              </table>
+              <div style="margin:18px 0 0;background:#fffbeb;border-left:3px solid #F59E0B;border-radius:6px;padding:12px 14px;font-size:14px;color:#92400e;line-height:1.5;">
+                <strong>Important:</strong> This link will expire on ${data.expiresAt}.
+              </div>
               ` : ''}
-
-              <p style="margin: 0; color: #6b7280; font-size: 14px; line-height: 1.6;">
-                If you have any questions or concerns, please contact our support team.
-              </p>
             </td>
           </tr>
 
-          <!-- Footer -->
           <tr>
-            <td style="background-color: #f9fafb; padding: 30px 40px; text-align: center; border-top: 1px solid #e5e7eb;">
-              <p style="margin: 0 0 10px; color: #6b7280; font-size: 12px; line-height: 1.5;">
-                &copy; ${new Date().getFullYear()} ExtraHand. All rights reserved.
+            <td style="background:#f9fafb;padding:20px 32px;text-align:center;border-top:1px solid #e5e7eb;">
+              <p style="margin:0 0 8px;color:#6b7280;font-size:13px;line-height:1.6;">
+                If you have questions, please contact our support team.
               </p>
-              <p style="margin: 0; color: #9ca3af; font-size: 12px; line-height: 1.5;">
-                This is an automated email. Please do not reply to this message.
-              </p>
+              <p style="margin:0;color:#9ca3af;font-size:12px;">© ${new Date().getFullYear()} ExtraHand. All rights reserved.</p>
             </td>
           </tr>
         </table>
@@ -118,14 +92,12 @@ export const passwordResetTemplate: EmailTemplate = {
   text: (data: PasswordResetTemplateData) => `
 Hello ${data.name || 'there'},
 
-We received a request to reset your password for your ExtraHand Admin account. If you didn't make this request, you can safely ignore this email.
+We received a request to reset your ExtraHand Admin password. If you didn't make this request, you can ignore this email.
 
-To reset your password, please click the link below:
-${data.resetLink}
-
+Reset link: ${data.resetLink}
 ${data.expiresAt ? `Important: This link will expire on ${data.expiresAt}.` : ''}
 
-If you have any questions or concerns, please contact our support team.
+If you have any questions, please contact our support team.
 
 © ${new Date().getFullYear()} ExtraHand. All rights reserved.
 This is an automated email. Please do not reply to this message.

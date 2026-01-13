@@ -12,113 +12,79 @@ export const accountCreatedTemplate: EmailTemplate = {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <title>Your ExtraHand Account is Ready!</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5; padding: 40px 20px;">
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f5f5f5;padding:32px 16px;">
     <tr>
-      <td align="center" style="padding: 0;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; background: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+      <td align="center">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;background:#ffffff;border-radius:10px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.08);">
           
-          <!-- Header -->
           <tr>
-            <td style="background-color: #ffffff; padding: 40px 40px 30px; text-align: center; border-bottom: 1px solid #e5e7eb;">
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                <tr>
-                  <td align="center" style="padding-bottom: 20px;">
-                    ${EXTRAHAND_LOGO_SVG}
-                  </td>
-                </tr>
-                <tr>
-                  <td align="center">
-                    <h1 style="margin: 0; font-size: 24px; font-weight: 600; color: #1f2937; line-height: 1.3;">
-                      Welcome to ExtraHand!
-                    </h1>
-                  </td>
-                </tr>
-              </table>
+            <td style="background:#0F172A;color:#fff;padding:12px 24px;font-size:13px;letter-spacing:0.3px;text-align:center;">
+              Welcome to ExtraHand
             </td>
           </tr>
           
-          <!-- Content -->
           <tr>
-            <td style="padding: 40px;">
-              <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
+          <tr>
+            <td style="padding:32px 32px 20px;text-align:center;border-bottom:1px solid #e5e7eb;">
+              <div style="margin-bottom:16px;">${EXTRAHAND_LOGO_SVG}</div>
+              <h1 style="margin:0;font-size:24px;font-weight:700;color:#111827;">Your account is ready</h1>
+              <p style="margin:8px 0 0;font-size:14px;color:#6b7280;">Start onboarding and complete your profile</p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:28px 32px;">
+              <p style="margin:0 0 18px;color:#374151;font-size:16px;line-height:1.6;">
                 Hello <strong>${data.name}</strong>,
               </p>
-              
-              <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
-                Your account has been successfully created on ExtraHand! We're excited to have you join our community of skilled taskers.
+              <p style="margin:0 0 18px;color:#374151;font-size:16px;line-height:1.6;">
+                Your account has been created on ExtraHand. Next, finish your onboarding steps to start receiving opportunities.
               </p>
-              
+
               ${data.phone ? `
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; margin: 20px 0;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;margin:0 0 18px;">
                 <tr>
-                  <td style="padding: 16px;">
-                    <p style="margin: 0; font-size: 14px; color: #374151;">
-                      <strong>Your Phone Number:</strong> ${data.phone}
-                    </p>
+                  <td style="padding:14px 16px;font-size:14px;color:#111827;">
+                    <strong>Phone:</strong> ${data.phone}
                   </td>
                 </tr>
               </table>
               ` : ''}
-              
-              <p style="margin: 20px 0 12px; color: #374151; font-size: 16px; line-height: 1.6;">
-                You can now:
-              </p>
-              <ul style="margin: 0 0 30px; padding-left: 20px; color: #374151; font-size: 16px; line-height: 1.8;">
+
+              <p style="margin:16px 0 10px;color:#111827;font-size:15px;font-weight:600;">You can now:</p>
+              <ul style="margin:0 0 22px;padding-left:20px;color:#374151;font-size:15px;line-height:1.7;">
                 <li>Browse and apply for tasks in your area</li>
                 <li>Build your profile and showcase your skills</li>
-                <li>Start earning money by completing tasks</li>
+                <li>Start earning by completing tasks</li>
                 <li>Get verified to unlock more opportunities</li>
               </ul>
-              
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                 <tr>
-                  <td align="center" style="padding: 30px 0;">
-                    <a href="${data.loginUrl}" style="display: inline-block; background-color: #F59E0B; color: #ffffff !important; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-size: 16px; font-weight: 600;">
-                      Login to Your Account
-                    </a>
+                  <td align="center" style="padding:20px 0 10px;">
+                    <a href="${data.loginUrl}" style="display:inline-block;background:#F59E0B;color:#fff !important;text-decoration:none;padding:14px 30px;border-radius:8px;font-size:16px;font-weight:700;">Login to your account</a>
                   </td>
                 </tr>
               </table>
-              
-              <p style="margin: 30px 0 12px; color: #374151; font-size: 16px; line-height: 1.6;">
-                <strong>Next Steps:</strong>
-              </p>
-              <ol style="margin: 0 0 30px; padding-left: 20px; color: #374151; font-size: 16px; line-height: 1.8;">
-                <li>Complete your profile</li>
-                <li>Add your skills and experience</li>
-                <li>Upload profile photo</li>
-                <li>Get verified (optional but recommended)</li>
-              </ol>
-              
-              <p style="margin: 0; color: #374151; font-size: 16px; line-height: 1.6;">
-                If you have any questions or need assistance, our support team is here to help at <a href="mailto:${data.supportEmail}" style="color: #F59E0B; text-decoration: none;">${data.supportEmail}</a>.
-              </p>
-              
-              <p style="margin: 30px 0 0; color: #374151; font-size: 16px; line-height: 1.6;">
-                Best regards,<br>
-                <strong>The ExtraHand Team</strong>
+
+              <p style="margin:22px 0 0;color:#374151;font-size:15px;line-height:1.6;">
+                Need help? Contact us at <a href="mailto:${data.supportEmail}" style="color:#F59E0B;text-decoration:none;">${data.supportEmail}</a>.
               </p>
             </td>
           </tr>
-          
-          <!-- Footer -->
+
           <tr>
-            <td style="background-color: #f9fafb; padding: 30px 40px; text-align: center; border-top: 1px solid #e5e7eb;">
-              <p style="margin: 0 0 12px; color: #6b7280; font-size: 12px; line-height: 1.5;">
-                This is an automated email. Please do not reply to this message.
+            <td style="background:#f9fafb;padding:20px 32px;text-align:center;border-top:1px solid #e5e7eb;">
+              <p style="margin:0 0 8px;color:#6b7280;font-size:13px;line-height:1.6;">This is an automated email.</p>
+              <p style="margin:0 0 8px;font-size:13px;">
+                <a href="${data.loginUrl}" style="color:#F59E0B;text-decoration:none;">Login</a> ·
+                <a href="https://extrahand.in/help" style="color:#F59E0B;text-decoration:none;">Help Center</a> ·
+                <a href="https://extrahand.in/contact" style="color:#F59E0B;text-decoration:none;">Contact Us</a>
               </p>
-              <p style="margin: 0 0 12px; color: #6b7280; font-size: 12px; line-height: 1.5;">
-                <a href="${data.loginUrl}" style="color: #F59E0B; text-decoration: none;">Login</a> • 
-                <a href="https://extrahand.in/help" style="color: #F59E0B; text-decoration: none;">Help Center</a> • 
-                <a href="https://extrahand.in/contact" style="color: #F59E0B; text-decoration: none;">Contact Us</a>
-              </p>
-              <p style="margin: 0; color: #9ca3af; font-size: 12px; line-height: 1.5;">
-                © ${new Date().getFullYear()} ExtraHand. All rights reserved.
-              </p>
+              <p style="margin:0;color:#9ca3af;font-size:12px;">© ${new Date().getFullYear()} ExtraHand. All rights reserved.</p>
             </td>
           </tr>
         </table>
@@ -134,31 +100,18 @@ Welcome to ExtraHand!
 
 Hello ${data.name},
 
-Your account has been successfully created on ExtraHand! We're excited to have you join our community of skilled taskers.
+Your account has been created. Next steps:
+- Complete your profile
+- Add your skills and experience
+- Upload a profile photo
+- Get verified (optional but recommended)
 
-${data.phone ? `Your Phone Number: ${data.phone}\n` : ''}
+Login: ${data.loginUrl}
+${data.phone ? `Phone: ${data.phone}` : ''}
 
-You can now:
-- Browse and apply for tasks in your area
-- Build your profile and showcase your skills
-- Start earning money by completing tasks
-- Get verified to unlock more opportunities
+Need help? ${data.supportEmail}
 
-Login to your account: ${data.loginUrl}
-
-Next Steps:
-1. Complete your profile
-2. Add your skills and experience
-3. Upload profile photo
-4. Get verified (optional but recommended)
-
-If you have any questions or need assistance, our support team is here to help at ${data.supportEmail}.
-
-Best regards,
-The ExtraHand Team
-
----
-This is an automated email. Please do not reply to this message.
+This is an automated email. Please do not reply.
 © ${new Date().getFullYear()} ExtraHand. All rights reserved.
   `
 };
