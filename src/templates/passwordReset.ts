@@ -6,13 +6,7 @@ export interface PasswordResetTemplateData {
   expiresAt?: string;
 }
 
-// ExtraHand Logo SVG (inline)
-const extrahandLogoSVG = `
-<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="48" height="48" rx="8" fill="#F59E0B"/>
-  <text x="24" y="32" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="white" text-anchor="middle">EH</text>
-</svg>
-`;
+import { EXTRAHAND_LOGO_SVG } from './logo';
 
 export const passwordResetTemplate: EmailTemplate = {
   name: 'password_reset',
@@ -38,7 +32,7 @@ export const passwordResetTemplate: EmailTemplate = {
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
                   <td align="center" style="padding-bottom: 20px;">
-                    ${extrahandLogoSVG}
+                    ${EXTRAHAND_LOGO_SVG}
                   </td>
                 </tr>
                 <tr>
