@@ -139,7 +139,7 @@ export class EmailService {
   ) {
     return this.sendEmail({
       to: email,
-      subject: "You've been invited to join ExtraHand Admin Team",
+      subject: "You've been invited to join ExtraHand Partner Onboarding Platform Team",
       template: 'admin_invite',
       data: {
         role,

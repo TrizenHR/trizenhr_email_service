@@ -57,7 +57,8 @@
     "EMAIL_FROM_ADDRESS": "YOUR_FROM_EMAIL",
     "EMAIL_FROM_NAME": "ExtraHand",
     "WEB_APP_URL": "https://extrahand.in",
-    "MOBILE_APP_DEEP_LINK": "extrahand://"
+    "MOBILE_APP_DEEP_LINK": "extrahand://",
+    "LOGO_URL":  "https://drive.google.com/file/d/1FvCJTDBZE0bMHWKbHDOBjtclMDwQ0oFK/view?usp=sharing"
   },
   "volumes": [
     {

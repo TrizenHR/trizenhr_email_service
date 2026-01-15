@@ -40,6 +40,7 @@ const envSchema = z.object({
   // Application URLs
   WEB_APP_URL: z.string().url('Invalid web app URL').default('https://extrahand.in'),
   MOBILE_APP_DEEP_LINK: z.string().default('extrahand://'),
+  LOGO_URL: z.string().url('Invalid logo URL').optional(),
   
   // Logging
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
