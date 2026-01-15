@@ -37,7 +37,8 @@ export class SendGridProvider {
             : att.content,
           filename: att.filename,
           type: att.contentType,
-          disposition: 'attachment',
+          disposition: att.cid ? 'inline' : 'attachment', // Inline for CID attachments
+          contentId: att.cid, // Content-ID for inline images
         })),
       };
 

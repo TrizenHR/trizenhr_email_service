@@ -73,6 +73,30 @@ export class SMTPProvider {
       const emailDomain = fromEmail.split('@')[1] || 'extrahand.in';
       const messageId = `<${Date.now()}-${Math.random().toString(36).substring(2, 15)}@${emailDomain}>`;
 
+      // Convert attachments to nodemailer format with CID support
+      const attachments = payload.attachments?.map(att => {
+        const attachment: any = {
+          filename: att.filename,
+          content: att.content,
+          contentType: att.contentType || 'application/octet-stream',
+        };
+        
+        // Add CID for inline images (nodemailer uses 'cid' property)
+        if (att.cid) {
+          attachment.cid = att.cid; // CID without 'cid:' prefix
+        }
+        
+        logger.debug('Prepared attachment for email', {
+          filename: att.filename,
+          hasCid: !!att.cid,
+          cid: att.cid,
+          contentType: attachment.contentType,
+          contentSize: Buffer.isBuffer(att.content) ? att.content.length : typeof att.content === 'string' ? att.content.length : 'unknown',
+        });
+        
+        return attachment;
+      });
+
       const mailOptions: nodemailer.SendMailOptions = {
         from: {
           name: payload.from.name,
@@ -85,7 +109,7 @@ export class SMTPProvider {
         subject: payload.subject,
         html: payload.html,
         text: payload.text,
-        attachments: payload.attachments,
+        attachments, // Use converted attachments with CID support
         headers: {
           'X-Mailer': 'ExtraHand Email Service',
           'X-Priority': '3',
@@ -107,6 +131,12 @@ export class SMTPProvider {
         subject: payload.subject,
         from: fromEmail,
         isMicrosoft: this.isMicrosoft,
+        attachmentCount: attachments?.length || 0,
+        attachments: attachments?.map(att => ({
+          filename: att.filename,
+          cid: att.cid,
+          contentType: att.contentType,
+        })),
       });
 
       const info = await this.transporter.sendMail(mailOptions);

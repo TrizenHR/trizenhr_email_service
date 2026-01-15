@@ -6,6 +6,7 @@ import { SESProvider } from './providers/SESProvider';
 import EmailLog from '../models/EmailLog';
 import { TemplateService } from './TemplateService';
 import { EmailOptions, EmailResult } from '../types';
+import { fetchLogoAsBuffer, getLogoAsBase64 } from '../utils/logoUtils';
 
 export class EmailService {
   private static provider: any;
@@ -127,7 +128,7 @@ export class EmailService {
   // Convenience methods
   
   /**
-   * Send admin invite email
+   * Send admin invite email with logo (base64 embedded for maximum compatibility)
    */
   static async sendAdminInviteEmail(
     email: string,
@@ -137,6 +138,52 @@ export class EmailService {
     team?: string,
     department?: string
   ) {
+    // Fetch logo as base64 for direct embedding in HTML (most reliable method)
+    let logoBase64: string | null = null;
+    let logoAttachment: Array<{
+      filename: string;
+      content: Buffer;
+      contentType: string;
+      cid: string;
+    }> | undefined = undefined;
+    
+    try {
+      logger.info('Fetching logo for admin invite email', { email });
+      
+      // Try base64 first (most reliable)
+      logoBase64 = await getLogoAsBase64();
+      if (logoBase64) {
+        logger.info('Logo fetched as base64 successfully', {
+          email,
+          base64Length: logoBase64.length,
+        });
+      } else {
+        // Fallback to CID attachment
+        const logoBuffer = await fetchLogoAsBuffer();
+        if (logoBuffer) {
+          logoAttachment = [{
+            filename: 'extrahand-logo.png',
+            content: logoBuffer,
+            contentType: 'image/png',
+            cid: 'extrahand-logo',
+          }];
+          logger.info('Logo attachment prepared (CID method)', {
+            email,
+            logoSize: logoBuffer.length,
+          });
+        } else {
+          logger.warn('Logo fetch failed, email will be sent without logo', { email });
+        }
+      }
+    } catch (error: any) {
+      logger.error('Failed to fetch logo for admin invite email', {
+        error: error.message,
+        stack: error.stack,
+        email,
+      });
+      // Continue without logo - template will handle gracefully
+    }
+
     return this.sendEmail({
       to: email,
       subject: "You've been invited to join ExtraHand Partner Onboarding Platform Team",
@@ -147,7 +194,9 @@ export class EmailService {
         department,
         inviteLink,
         expiresAt,
+        logoBase64, // Pass base64 to template for direct embedding
       },
+      attachments: logoAttachment, // Fallback CID attachment if base64 not available
       metadata: { type: 'admin_invite' },
     });
   }

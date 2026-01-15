@@ -14,6 +14,7 @@ export interface EmailPayload {
     filename: string;
     content: Buffer | string;
     contentType?: string;
+    cid?: string; // Content-ID for inline images
   }>;
 }
 
@@ -36,6 +37,7 @@ export interface EmailOptions {
     filename: string;
     content: Buffer | string;
     contentType?: string;
+    cid?: string; // Content-ID for inline images
   }>;
   priority?: 'high' | 'normal' | 'low';
   metadata?: Record<string, any>;
