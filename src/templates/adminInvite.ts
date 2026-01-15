@@ -7,7 +7,6 @@ export interface AdminInviteTemplateData {
   inviteLink: string;
   expiresAt: Date;
   name?: string;
-  logoBase64?: string | null; // Base64 encoded logo for direct embedding
 }
 
 import { EXTRAHAND_LOGO_SVG } from "./logo";
