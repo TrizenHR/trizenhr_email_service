@@ -22,8 +22,9 @@ function getLogoHTML(): string {
             alt="ExtraHand Logo" 
             width="80" 
             height="80" 
-            style="display:block;margin:0 auto;max-width:80px;height:auto;border:0;outline:none;text-decoration:none;"
+            style="display:block;margin:0 auto;max-width:80px;width:100%;height:auto;border:0;outline:none;text-decoration:none;"
             border="0"
+            class="logo-image"
           />
         </td>
       </tr>
