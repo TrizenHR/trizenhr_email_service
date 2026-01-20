@@ -209,7 +209,7 @@ export class EmailService {
   }
 
   /**
-   * Send password reset email
+   * Send password reset email with logo as CID attachment (bulletproof for Outlook)
    */
   static async sendPasswordResetEmail(
     email: string,
@@ -227,6 +227,45 @@ export class EmailService {
         })
       : undefined;
 
+    // Always use CID attachment - fetch logo from URL and attach inline
+    // This is the only bulletproof method for Outlook
+    let logoAttachment: Array<{
+      filename: string;
+      content: Buffer;
+      contentType: string;
+      cid: string;
+    }> | undefined = undefined;
+    
+    try {
+      logger.info('Fetching logo for CID attachment', { email });
+      
+      // Fetch logo from the hosted URL (imgbb.co)
+      const logoBuffer = await fetchLogoAsBuffer('https://i.ibb.co/Zt9jNcs/logo.png');
+      
+      if (logoBuffer) {
+        logoAttachment = [{
+          filename: 'logo.png',
+          content: logoBuffer,
+          contentType: 'image/png',
+          cid: 'extrahand-logo', // Must match src="cid:extrahand-logo" in template
+        }];
+        logger.info('Logo attached with CID successfully', {
+          email,
+          logoSize: logoBuffer.length,
+          cid: 'extrahand-logo',
+        });
+      } else {
+        logger.warn('Logo fetch failed, email will be sent without logo', { email });
+      }
+    } catch (error: any) {
+      logger.error('Failed to fetch logo for CID attachment', {
+        error: error.message,
+        stack: error.stack,
+        email,
+      });
+      // Continue without logo - template will show broken image or nothing
+    }
+
     return this.sendEmail({
       to: email,
       subject: 'Reset Your ExtraHand Admin Password',
@@ -236,6 +275,7 @@ export class EmailService {
         resetLink,
         expiresAt: formattedExpiresAt,
       },
+      attachments: logoAttachment, // CID attachment - bulletproof for Outlook
       metadata: { type: 'password_reset' },
     });
   }
