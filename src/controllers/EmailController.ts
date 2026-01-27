@@ -135,6 +135,82 @@ export class EmailController {
   });
 
   /**
+   * Send suspension notification email
+   * POST /api/v1/email/suspension
+   */
+  static sendSuspensionEmail = asyncHandler(async (req: Request, res: Response) => {
+    const { email, name, suspendedUntil, reason, daysRemaining, contactInfo } = req.body;
+    
+    if (!email || !name || !suspendedUntil || !reason) {
+      return res.status(400).json({
+        success: false,
+        error: 'email, name, suspendedUntil, and reason are required'
+      });
+    }
+    
+    // Return immediately - process email in background
+    res.json({
+      success: true,
+      message: 'Email queued for sending'
+    });
+    
+    // Process email asynchronously (don't await)
+    EmailService.sendSuspensionEmail(
+      email,
+      name,
+      new Date(suspendedUntil),
+      reason,
+      daysRemaining,
+      contactInfo
+    ).catch((error: any) => {
+      logger.error('Background suspension email send failed', {
+        email,
+        name,
+        error: error.message
+      });
+    });
+    
+    return;
+  });
+
+  /**
+   * Send ban notification email
+   * POST /api/v1/email/ban
+   */
+  static sendBanEmail = asyncHandler(async (req: Request, res: Response) => {
+    const { email, name, reason, contactInfo } = req.body;
+    
+    if (!email || !name || !reason) {
+      return res.status(400).json({
+        success: false,
+        error: 'email, name, and reason are required'
+      });
+    }
+    
+    // Return immediately - process email in background
+    res.json({
+      success: true,
+      message: 'Email queued for sending'
+    });
+    
+    // Process email asynchronously (don't await)
+    EmailService.sendBanEmail(
+      email,
+      name,
+      reason,
+      contactInfo
+    ).catch((error: any) => {
+      logger.error('Background ban email send failed', {
+        email,
+        name,
+        error: error.message
+      });
+    });
+    
+    return;
+  });
+
+  /**
    * Health check with provider verification
    * GET /api/v1/email/health
    */

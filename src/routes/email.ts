@@ -12,6 +12,8 @@ router.post('/send', EmailController.sendEmail);
 router.post('/admin-invite', EmailController.sendAdminInviteEmail);
 router.post('/account-created', EmailController.sendAccountCreatedEmail);
 router.post('/password-reset', EmailController.sendPasswordResetEmail);
+router.post('/suspension', EmailController.sendSuspensionEmail);
+router.post('/ban', EmailController.sendBanEmail);
 router.get('/health', EmailController.healthCheck);
 
 export default router;

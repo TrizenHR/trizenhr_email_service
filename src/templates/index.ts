@@ -8,6 +8,8 @@ import { welcomeTemplate } from './welcome';
 import { emailVerificationTemplate } from './emailVerification';
 import { loginAlertTemplate } from './loginAlert';
 import { accountSuspendedTemplate } from './accountSuspended';
+import { suspensionTemplate } from './suspension';
+import { banTemplate } from './ban';
 
 // Task Templates
 import { taskCreatedRecommendedTemplate } from './taskCreatedRecommended';
@@ -44,6 +46,8 @@ export const templates: Record<string, EmailTemplate> = {
   email_verification: emailVerificationTemplate,
   login_alert: loginAlertTemplate,
   account_suspended: accountSuspendedTemplate,
+  suspension: suspensionTemplate,
+  ban: banTemplate,
 
   // Task
   task_created_recommended: taskCreatedRecommendedTemplate,
