@@ -7,6 +7,7 @@ export interface AdminInviteTemplateData {
   inviteLink: string;
   expiresAt: Date;
   name?: string;
+  platformName?: string; // Optional platform name, defaults to "Partner Onboarding Platform"
 }
 
 import { EXTRAHAND_LOGO_SVG } from "./logo";
@@ -17,6 +18,7 @@ export const adminInviteTemplate: EmailTemplate = {
 
   html: (data: AdminInviteTemplateData) => {
     const roleDisplay = data.role.charAt(0).toUpperCase() + data.role.slice(1);
+    const platformName = data.platformName || "Partner Onboarding Platform";
     const expiryDate = new Date(data.expiresAt).toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
@@ -191,7 +193,7 @@ export const adminInviteTemplate: EmailTemplate = {
           <!-- Header Bar -->
           <tr>
             <td class="header-bar" style="background:#0f172a;color:#e2e8f0;padding:11px 20px;font-size:11px;letter-spacing:0.8px;text-align:center;text-transform:uppercase;font-weight:500;">
-              Partner Onboarding Platform
+              ${platformName}
             </td>
           </tr>
           
@@ -219,7 +221,7 @@ export const adminInviteTemplate: EmailTemplate = {
                 ${data.name ? `Hello ${data.name},` : 'Hello,'}
               </p>
               <p class="text-block" style="margin:0 0 20px;font-size:15px;line-height:24px;color:#334155;font-weight:400;">
-                You've been invited to join the ExtraHand Partner Onboarding Platform with the following role:
+                You've been invited to join the ExtraHand ${platformName} with the following role:
               </p>
 
               <!-- Role Card (Smaller) -->
@@ -308,6 +310,7 @@ export const adminInviteTemplate: EmailTemplate = {
 
   text: (data: AdminInviteTemplateData) => {
     const roleDisplay = data.role.charAt(0).toUpperCase() + data.role.slice(1);
+    const platformName = data.platformName || "Partner Onboarding Platform";
     const expiryDate = new Date(data.expiresAt).toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
@@ -319,7 +322,7 @@ EXTRAHAND - You're Invited to Join the Admin Team
 
 ${data.name ? `Hello ${data.name},` : "Hello,"}
 
-You've been invited to the ExtraHand Partner Onboarding Platform.
+You've been invited to the ExtraHand ${platformName}.
 
 Role: ${roleDisplay}
 ${data.team ? `Team: ${data.team}` : ""}

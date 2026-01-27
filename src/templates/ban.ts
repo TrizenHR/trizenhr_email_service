@@ -4,15 +4,20 @@ export interface BanTemplateData {
   name: string;
   reason: string;
   contactInfo?: string;
+  platformName?: string;
 }
 
 import { EXTRAHAND_LOGO_SVG } from './logo';
 
 export const banTemplate: EmailTemplate = {
   name: 'ban',
-  subject: 'Account Banned - ExtraHand Content Admin',
+  subject: (data: BanTemplateData) => {
+    const platformName = data.platformName || 'Partner Onboarding Platform';
+    return `Account Banned - ${platformName}`;
+  },
   
   html: (data: BanTemplateData) => {
+    const platformName = data.platformName || 'Partner Onboarding Platform';
     return `
 <!DOCTYPE html>
 <html lang="en">
@@ -68,7 +73,7 @@ export const banTemplate: EmailTemplate = {
                 Hello ${data.name},
               </p>
               <p style="margin:0 0 18px;color:#374151;font-size:16px;line-height:1.6;">
-                Your ExtraHand Content Admin account has been permanently banned. You will no longer be able to access the platform.
+                Your ${platformName} account has been permanently banned. You will no longer be able to access the platform.
               </p>
 
               <!-- Ban Details Card -->
@@ -102,7 +107,7 @@ export const banTemplate: EmailTemplate = {
           <tr>
             <td style="background:#f9fafb;padding:20px 32px;text-align:center;border-top:1px solid #e5e7eb;">
               <p style="margin:0 0 8px;color:#6b7280;font-size:13px;line-height:1.6;">
-                This is an automated notification from ExtraHand Content Admin.
+                This is an automated notification from ${platformName}.
               </p>
               <p style="margin:0;color:#9ca3af;font-size:12px;">© ${new Date().getFullYear()} ExtraHand. All rights reserved.</p>
             </td>
@@ -117,12 +122,13 @@ export const banTemplate: EmailTemplate = {
   },
 
   text: (data: BanTemplateData) => {
+    const platformName = data.platformName || 'Partner Onboarding Platform';
     return `
-EXTRAHAND CONTENT ADMIN - Account Banned
+${platformName.toUpperCase()} - Account Banned
 
 Hello ${data.name},
 
-Your ExtraHand Content Admin account has been permanently banned. You will no longer be able to access the platform.
+Your ${platformName} account has been permanently banned. You will no longer be able to access the platform.
 
 BAN DETAILS:
 Reason: ${data.reason}
@@ -131,7 +137,7 @@ IMPORTANT: This ban is permanent and cannot be reversed. Your account access has
 
 ${data.contactInfo || 'If you believe this ban was issued in error, you may contact your manager or administrator to discuss the matter. However, please note that ban decisions are typically final.'}
 
-This is an automated notification from ExtraHand Content Admin.
+This is an automated notification from ${platformName}.
 © ${new Date().getFullYear()} ExtraHand. All rights reserved.
   `;
   },

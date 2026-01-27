@@ -4,20 +4,26 @@ export interface PasswordResetTemplateData {
   name?: string;
   resetLink: string;
   expiresAt?: string;
+  platformName?: string;
 }
 
 import { EXTRAHAND_LOGO_SVG } from './logo';
-
+console.log("This endpoint is called for password reset")
 export const passwordResetTemplate: EmailTemplate = {
   name: 'password_reset',
-  subject: 'Reset Your ExtraHand Admin Password',
-  html: (data: PasswordResetTemplateData) => `
+  subject: (data: PasswordResetTemplateData) => {
+    const platformName = data.platformName || 'Partner Onboarding Platform';
+    return `Reset Your ${platformName} Password`;
+  },
+  html: (data: PasswordResetTemplateData) => {
+    const platformName = data.platformName || 'Partner Onboarding Platform';
+    return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reset Your ExtraHand Admin Password</title>
+  <title>Reset Your ${platformName} Password</title>
 </head>
 <body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f5f5f5;padding:32px 16px;">
@@ -27,7 +33,7 @@ export const passwordResetTemplate: EmailTemplate = {
           
           <tr>
             <td style="background:#0F172A;color:#fff;padding:12px 24px;font-size:13px;letter-spacing:0.3px;text-align:center;">
-              ExtraHand Admin
+              ${platformName.toUpperCase()}
             </td>
           </tr>
 
@@ -46,7 +52,7 @@ export const passwordResetTemplate: EmailTemplate = {
                 Hello ${data.name || 'there'},
               </p>
               <p style="margin:0 0 18px;color:#374151;font-size:16px;line-height:1.6;">
-                We received a request to reset your ExtraHand Admin password. If you didn't request this, you can ignore this email.
+                We received a request to reset your ${platformName} password. If you didn't request this, you can ignore this email.
               </p>
 
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
@@ -88,11 +94,14 @@ export const passwordResetTemplate: EmailTemplate = {
   </table>
 </body>
 </html>
-  `,
-  text: (data: PasswordResetTemplateData) => `
+  `;
+  },
+  text: (data: PasswordResetTemplateData) => {
+    const platformName = data.platformName || 'Partner Onboarding Platform';
+    return `
 Hello ${data.name || 'there'},
 
-We received a request to reset your ExtraHand Admin password. If you didn't make this request, you can ignore this email.
+We received a request to reset your ${platformName} password. If you didn't make this request, you can ignore this email.
 
 Reset link: ${data.resetLink}
 ${data.expiresAt ? `Important: This link will expire on ${data.expiresAt}.` : ''}
@@ -100,6 +109,7 @@ ${data.expiresAt ? `Important: This link will expire on ${data.expiresAt}.` : ''
 If you have any questions, please contact our support team.
 
 © ${new Date().getFullYear()} ExtraHand. All rights reserved.
-This is an automated email. Please do not reply to this message.
-  `,
+This is an automated email from ${platformName}. Please do not reply to this message.
+  `;
+  },
 };

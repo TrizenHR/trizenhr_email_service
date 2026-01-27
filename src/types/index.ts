@@ -51,7 +51,7 @@ export interface EmailResult {
 
 export interface EmailTemplate {
   name: string;
-  subject: string;
+  subject: string | ((data: any) => string);
   html: (data: any) => string;
   text: (data: any) => string;
 }

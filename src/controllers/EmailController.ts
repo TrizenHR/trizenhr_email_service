@@ -32,7 +32,7 @@ export class EmailController {
    * POST /api/v1/email/admin-invite
    */
   static sendAdminInviteEmail = asyncHandler(async (req: Request, res: Response) => {
-    const { email, role, inviteLink, expiresAt, team, department } = req.body;
+    const { email, role, inviteLink, expiresAt, team, department, platformName } = req.body;
     
     if (!email || !role || !inviteLink || !expiresAt) {
       return res.status(400).json({
@@ -54,7 +54,8 @@ export class EmailController {
       inviteLink,
       new Date(expiresAt),
       team,
-      department
+      department,
+      platformName
     ).catch((error: any) => {
       logger.error('Background admin invite email send failed', {
         email,
@@ -103,7 +104,7 @@ export class EmailController {
    * POST /api/v1/email/password-reset
    */
   static sendPasswordResetEmail = asyncHandler(async (req: Request, res: Response) => {
-    const { email, resetLink, name, expiresAt } = req.body;
+    const { email, resetLink, name, expiresAt, platformName } = req.body;
     
     if (!email || !resetLink) {
       return res.status(400).json({
@@ -112,6 +113,18 @@ export class EmailController {
       });
     }
     
+    // Log the received platformName for debugging
+    logger.info('Password reset email request received', {
+      email,
+      platformName: platformName || 'not provided (will use default)',
+      platformNameType: typeof platformName,
+      platformNameValue: platformName,
+      hasPlatformName: !!platformName,
+      reqBodyKeys: Object.keys(req.body),
+      reqBodyPlatformName: req.body.platformName,
+      fullRequestBody: JSON.stringify(req.body),
+    });
+    
     // Return immediately - process email in background
     res.json({
       success: true,
@@ -119,14 +132,17 @@ export class EmailController {
     });
     
     // Process email asynchronously (don't await)
+    // Pass platformName directly - let EmailService handle the default
     EmailService.sendPasswordResetEmail(
       email,
       resetLink,
       name,
-      expiresAt ? new Date(expiresAt) : undefined
+      expiresAt ? new Date(expiresAt) : undefined,
+      platformName // Pass as-is, EmailService will handle defaults
     ).catch((error: any) => {
       logger.error('Background password reset email send failed', {
         email,
+        platformName,
         error: error.message
       });
     });
@@ -139,7 +155,7 @@ export class EmailController {
    * POST /api/v1/email/suspension
    */
   static sendSuspensionEmail = asyncHandler(async (req: Request, res: Response) => {
-    const { email, name, suspendedUntil, reason, daysRemaining, contactInfo } = req.body;
+    const { email, name, suspendedUntil, reason, daysRemaining, contactInfo, platformName } = req.body;
     
     if (!email || !name || !suspendedUntil || !reason) {
       return res.status(400).json({
@@ -161,7 +177,8 @@ export class EmailController {
       new Date(suspendedUntil),
       reason,
       daysRemaining,
-      contactInfo
+      contactInfo,
+      platformName
     ).catch((error: any) => {
       logger.error('Background suspension email send failed', {
         email,
@@ -178,7 +195,7 @@ export class EmailController {
    * POST /api/v1/email/ban
    */
   static sendBanEmail = asyncHandler(async (req: Request, res: Response) => {
-    const { email, name, reason, contactInfo } = req.body;
+    const { email, name, reason, contactInfo, platformName } = req.body;
     
     if (!email || !name || !reason) {
       return res.status(400).json({
@@ -198,7 +215,8 @@ export class EmailController {
       email,
       name,
       reason,
-      contactInfo
+      contactInfo,
+      platformName
     ).catch((error: any) => {
       logger.error('Background ban email send failed', {
         email,

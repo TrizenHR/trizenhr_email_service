@@ -35,10 +35,60 @@ export class EmailService {
     try {
       let html = options.html;
       let text = options.text;
+      let subject = options.subject;
 
       // Render template if provided
       if (options.template) {
-        const rendered = TemplateService.render(options.template, options.data || {});
+        // Clear require cache to ensure we get the latest template
+        const templatesPath = require.resolve('../templates');
+        const passwordResetPath = require.resolve('../templates/passwordReset');
+        delete require.cache[templatesPath];
+        delete require.cache[passwordResetPath];
+        
+        const template = require('../templates').getTemplate(options.template);
+        const data = options.data || {};
+        
+        logger.info('Rendering email template', {
+          template: options.template,
+          platformName: data.platformName,
+          subjectType: typeof template?.subject,
+          hasSubjectFunction: typeof template?.subject === 'function',
+          providedSubject: options.subject,
+          willGenerateSubject: !options.subject || options.subject.trim() === '',
+        });
+        
+        // Handle dynamic subject from template
+        // Always use template's subject function if available to ensure platformName is used correctly
+        // If subject is empty or not provided, always use template's subject function
+        if (template && typeof template.subject === 'function') {
+          const generatedSubject = template.subject(data);
+          
+          logger.info('Template subject function called in sendEmail', {
+            template: options.template,
+            platformName: data.platformName,
+            generatedSubject,
+            originalSubject: subject,
+            dataKeys: Object.keys(data),
+            willUseGenerated: !subject || subject.trim() === '',
+          });
+          
+          // Always use the template's generated subject (especially if subject is empty)
+          // This ensures platformName is always used correctly
+          subject = generatedSubject;
+        } else if (template && typeof template.subject === 'string') {
+          // Use static subject if template has one and no subject was provided
+          if (!subject || subject.trim() === '') {
+            subject = template.subject;
+          }
+        } else {
+          logger.warn('Template subject is not a function or string', {
+            template: options.template,
+            subjectType: typeof template?.subject,
+            subjectValue: template?.subject,
+          });
+        }
+        
+        const rendered = TemplateService.render(options.template, data);
         html = rendered.html;
         text = rendered.text;
       }
@@ -59,7 +109,7 @@ export class EmailService {
           name: this.env.EMAIL_FROM_NAME,
         },
         replyTo: this.env.EMAIL_REPLY_TO,
-        subject: options.subject,
+        subject: subject,
         html: html || '',
         text: text || TemplateService.stripHtml(html || ''),
         cc: options.cc,
@@ -70,7 +120,7 @@ export class EmailService {
       // Log email (non-blocking)
       this.logEmail({
         to: Array.isArray(options.to) ? options.to : [options.to],
-        subject: options.subject,
+        subject: subject,
         template: options.template,
         status: 'sent',
         messageId: result.messageId,
@@ -80,7 +130,7 @@ export class EmailService {
 
       logger.info('Email sent successfully', {
         to: options.to,
-        subject: options.subject,
+        subject: subject,
         template: options.template,
         messageId: result.messageId,
       });
@@ -98,9 +148,22 @@ export class EmailService {
       });
 
       // Log failed email (non-blocking)
+      let finalSubject = options.subject;
+      try {
+        if (options.template) {
+          const template = require('../templates').getTemplate(options.template);
+          const data = options.data || {};
+          if (template && typeof template.subject === 'function') {
+            finalSubject = template.subject(data);
+          }
+        }
+      } catch {
+        // Use original subject if template resolution fails
+        finalSubject = options.subject;
+      }
       this.logEmail({
         to: Array.isArray(options.to) ? options.to : [options.to],
-        subject: options.subject,
+        subject: finalSubject,
         template: options.template,
         status: 'failed',
         error: error.message,
@@ -136,7 +199,8 @@ export class EmailService {
     inviteLink: string,
     expiresAt: Date,
     team?: string,
-    department?: string
+    department?: string,
+    platformName?: string
   ) {
     // Always use CID attachment - fetch logo from URL and attach inline
     // This is the only bulletproof method for Outlook
@@ -177,9 +241,12 @@ export class EmailService {
       // Continue without logo - template will show broken image or nothing
     }
 
+    const defaultPlatformName = "Partner Onboarding Platform";
+    const finalPlatformName = platformName || defaultPlatformName;
+    
     return this.sendEmail({
       to: email,
-      subject: "You've been invited to join ExtraHand Partner Onboarding Platform Team",
+      subject: `You've been invited to join ExtraHand ${finalPlatformName} Team`,
       template: 'admin_invite',
       data: {
         role,
@@ -187,6 +254,7 @@ export class EmailService {
         department,
         inviteLink,
         expiresAt,
+        platformName: finalPlatformName,
       },
       attachments: logoAttachment, // CID attachment - bulletproof for Outlook
       metadata: { type: 'admin_invite' },
@@ -215,8 +283,15 @@ export class EmailService {
     email: string,
     resetLink: string,
     name?: string,
-    expiresAt?: Date
+    expiresAt?: Date,
+    platformName?: string
   ) {
+    logger.info('EmailService.sendPasswordResetEmail called', {
+      email,
+      receivedPlatformName: platformName,
+      platformNameType: typeof platformName,
+      platformNameValue: platformName,
+    });
     const formattedExpiresAt = expiresAt
       ? expiresAt.toLocaleDateString('en-US', {
           year: 'numeric',
@@ -266,17 +341,101 @@ export class EmailService {
       // Continue without logo - template will show broken image or nothing
     }
 
+    // Use provided platformName, or default to "Partner Onboarding Platform" for backward compatibility
+    // Note: Content Admin Portal should pass "Content Admin Portal" explicitly
+    const finalPlatformName = (platformName && typeof platformName === 'string' && platformName.trim() !== '') 
+      ? platformName.trim() 
+      : "Partner Onboarding Platform";
+
+    logger.info('Determining platformName for password reset', {
+      email,
+      receivedPlatformName: platformName,
+      platformNameType: typeof platformName,
+      platformNameValue: platformName,
+      finalPlatformName,
+      willUseDefault: !platformName || (typeof platformName === 'string' && platformName.trim() === '') || typeof platformName !== 'string',
+    });
+
+    const templateData = {
+      name: name || email.split('@')[0],
+      resetLink,
+      expiresAt: formattedExpiresAt,
+      platformName: finalPlatformName,
+    };
+    
+    logger.info('Sending password reset email', {
+      email,
+      platformName: finalPlatformName,
+      receivedPlatformName: platformName,
+      templateDataPlatformName: templateData.platformName,
+    });
+
+    // Don't pass subject - let sendEmail generate it from template to ensure platformName is used
     return this.sendEmail({
       to: email,
-      subject: 'Reset Your ExtraHand Admin Password',
+      subject: '', // Empty - will be generated from template
       template: 'password_reset',
-      data: {
-        name: name || email.split('@')[0],
-        resetLink,
-        expiresAt: formattedExpiresAt,
-      },
+      data: templateData,
       attachments: logoAttachment, // CID attachment - bulletproof for Outlook
       metadata: { type: 'password_reset' },
+    });
+  }
+
+  /**
+   * Send suspension notification email
+   */
+  static async sendSuspensionEmail(
+    email: string,
+    name: string,
+    suspendedUntil: Date,
+    reason: string,
+    daysRemaining?: number,
+    contactInfo?: string,
+    platformName?: string
+  ) {
+    const defaultPlatformName = "Partner Onboarding Platform";
+    const finalPlatformName = platformName || defaultPlatformName;
+
+    return this.sendEmail({
+      to: email,
+      subject: `Account Suspended - ${finalPlatformName}`, // Fallback, template will override if dynamic
+      template: 'suspension',
+      data: {
+        name,
+        suspendedUntil: suspendedUntil.toISOString(),
+        reason,
+        daysRemaining: daysRemaining || Math.ceil((suspendedUntil.getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
+        contactInfo: contactInfo || 'Please contact your manager or administrator for assistance.',
+        platformName: finalPlatformName,
+      },
+      metadata: { type: 'suspension' },
+    });
+  }
+
+  /**
+   * Send ban notification email
+   */
+  static async sendBanEmail(
+    email: string,
+    name: string,
+    reason: string,
+    contactInfo?: string,
+    platformName?: string
+  ) {
+    const defaultPlatformName = "Partner Onboarding Platform";
+    const finalPlatformName = platformName || defaultPlatformName;
+
+    return this.sendEmail({
+      to: email,
+      subject: `Account Banned - ${finalPlatformName}`, // Fallback, template will override if dynamic
+      template: 'ban',
+      data: {
+        name,
+        reason,
+        contactInfo: contactInfo || 'Please contact your manager or administrator for assistance.',
+        platformName: finalPlatformName,
+      },
+      metadata: { type: 'ban' },
     });
   }
 }
