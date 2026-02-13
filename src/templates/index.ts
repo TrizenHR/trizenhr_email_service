@@ -14,9 +14,15 @@ import { banTemplate } from './ban';
 // Task Templates
 import { taskCreatedRecommendedTemplate } from './taskCreatedRecommended';
 import { taskCreatedKeywordTemplate } from './taskCreatedKeyword';
+import { taskPostedConfirmationTemplate } from './taskPostedConfirmation';
+import { taskAssignedRequesterTemplate } from './taskAssignedRequester';
+import { taskCancelledTemplate } from './taskCancelled';
+import { taskStartedTemplate } from './taskStarted';
+import { completionProofSubmittedTemplate } from './completionProofSubmitted';
 import { applicationSubmittedTemplate } from './applicationSubmitted';
 import { applicationAcceptedTemplate } from './applicationAccepted';
 import { applicationRejectedTemplate } from './applicationRejected';
+import { applicationWithdrawnTemplate } from './applicationWithdrawn';
 import { taskUpdatedTemplate } from './taskUpdated';
 import { taskReminderTemplate } from './taskReminder';
 import { taskCompletedTemplate } from './taskCompleted';
@@ -52,9 +58,15 @@ export const templates: Record<string, EmailTemplate> = {
   // Task
   task_created_recommended: taskCreatedRecommendedTemplate,
   task_created_keyword: taskCreatedKeywordTemplate,
+  task_posted_confirmation: taskPostedConfirmationTemplate,
+  task_assigned_requester: taskAssignedRequesterTemplate,
+  task_cancelled: taskCancelledTemplate,
+  task_started: taskStartedTemplate,
+  completion_proof_submitted: completionProofSubmittedTemplate,
   application_submitted: applicationSubmittedTemplate,
   application_accepted: applicationAcceptedTemplate,
   application_rejected: applicationRejectedTemplate,
+  application_withdrawn: applicationWithdrawnTemplate,
   task_updated: taskUpdatedTemplate,
   task_reminder: taskReminderTemplate,
   task_completed: taskCompletedTemplate,
