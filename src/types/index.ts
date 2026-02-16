@@ -31,6 +31,8 @@ export interface EmailOptions {
   text?: string;
   template?: string;
   data?: Record<string, any>;
+  notificationCategory?: string;
+  userId?: string;
   cc?: string | string[];
   bcc?: string | string[];
   attachments?: Array<{

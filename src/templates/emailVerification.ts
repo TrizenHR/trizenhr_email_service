@@ -2,10 +2,10 @@ import { EmailTemplate } from '../types';
 import { EXTRAHAND_LOGO_SVG } from './logo';
 
 export const emailVerificationTemplate: EmailTemplate = {
-  name: 'email_verification',
-  subject: 'Verify Your Email Address - ExtraHand',
-  
-  html: (data: any) => `
+    name: 'email_verification',
+    subject: 'Verify Your Email Address - ExtraHand',
+
+    html: (data: any) => `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -92,8 +92,8 @@ export const emailVerificationTemplate: EmailTemplate = {
 </body>
 </html>
   `,
-  
-  text: (data: any) => `
+
+    text: (data: any) => `
 Verify Your Email Address - ExtraHand
 
 Hello${data.name ? ` ${data.name}` : ''},

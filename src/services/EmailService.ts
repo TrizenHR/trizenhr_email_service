@@ -7,6 +7,37 @@ import EmailLog from '../models/EmailLog';
 import { TemplateService } from './TemplateService';
 import { EmailOptions, EmailResult } from '../types';
 import { fetchLogoAsBuffer } from '../utils/logoUtils';
+import NotificationPreferencesClient, { NotificationCategory } from '../clients/NotificationPreferencesClient';
+
+type EmailPreferenceCategory =
+  | 'transactional'
+  | 'taskReminders'
+  | 'keywordTaskAlerts'
+  | 'recommendedTaskAlerts'
+  | 'taskUpdates'
+  | 'payments'
+  | 'promotions'
+  | 'reminders'
+  | 'system'
+  | 'marketing';
+
+const TEMPLATE_CATEGORY_MAP: Record<string, EmailPreferenceCategory> = {
+  task_posted_confirmation: 'transactional',
+  task_reminder: 'taskReminders',
+  task_created_keyword: 'keywordTaskAlerts',
+  task_created_recommended: 'recommendedTaskAlerts',
+  task_updated: 'taskUpdates',
+  task_assigned_requester: 'taskUpdates',
+  task_started: 'taskUpdates',
+  task_completed: 'taskUpdates',
+  task_cancelled: 'taskUpdates',
+  application_submitted: 'taskUpdates',
+  application_accepted: 'taskUpdates',
+  application_rejected: 'taskUpdates',
+  application_withdrawn: 'taskUpdates',
+  completion_proof_submitted: 'taskUpdates',
+  review_request: 'taskUpdates',
+};
 
 export class EmailService {
   private static provider: any;
@@ -31,11 +62,88 @@ export class EmailService {
     return this.provider;
   }
 
+  private static resolvePreferenceCategory(options: EmailOptions): EmailPreferenceCategory | undefined {
+    const metadataCategory = options.metadata?.notificationCategory || options.metadata?.category;
+    const dataCategory = options.data?.notificationCategory || options.data?.category;
+    const directCategory = options.notificationCategory;
+
+    if (typeof directCategory === 'string' && directCategory.trim() !== '') {
+      return directCategory as EmailPreferenceCategory;
+    }
+    if (typeof metadataCategory === 'string' && metadataCategory.trim() !== '') {
+      return metadataCategory as EmailPreferenceCategory;
+    }
+    if (typeof dataCategory === 'string' && dataCategory.trim() !== '') {
+      return dataCategory as EmailPreferenceCategory;
+    }
+    if (options.template && TEMPLATE_CATEGORY_MAP[options.template]) {
+      return TEMPLATE_CATEGORY_MAP[options.template];
+    }
+    return undefined;
+  }
+
+  private static resolveRecipientId(options: EmailOptions): string | undefined {
+    const fromMetadata = options.metadata?.userId || options.metadata?.uid || options.metadata?.recipientId;
+    if (typeof fromMetadata === 'string' && fromMetadata.trim() !== '') {
+      return fromMetadata;
+    }
+    const fromData = options.data?.userId || options.data?.uid || options.data?.recipientId;
+    if (typeof fromData === 'string' && fromData.trim() !== '') {
+      return fromData;
+    }
+    if (typeof options.userId === 'string' && options.userId.trim() !== '') {
+      return options.userId;
+    }
+    return undefined;
+  }
+
+  private static async isEmailAllowed(options: EmailOptions): Promise<boolean> {
+    const category = this.resolvePreferenceCategory(options);
+    const recipientId = this.resolveRecipientId(options);
+
+    if (!category || !recipientId) {
+      return true;
+    }
+
+    return NotificationPreferencesClient.canSendEmail(
+      recipientId,
+      category as NotificationCategory
+    );
+  }
+
   static async sendEmail(options: EmailOptions): Promise<EmailResult> {
     try {
       let html = options.html;
       let text = options.text;
       let subject = options.subject;
+
+      const isAllowed = await this.isEmailAllowed(options);
+      if (!isAllowed) {
+        logger.info('Email suppressed by user preferences', {
+          to: options.to,
+          template: options.template,
+          category: this.resolvePreferenceCategory(options),
+          userId: this.resolveRecipientId(options),
+        });
+
+        this.logEmail({
+          to: Array.isArray(options.to) ? options.to : [options.to],
+          subject: subject || options.subject || 'Suppressed by preferences',
+          template: options.template,
+          status: 'failed',
+          error: 'blocked_by_preferences',
+          provider: this.env.EMAIL_PROVIDER,
+          metadata: {
+            ...options.metadata,
+            suppressed: true,
+          },
+        });
+
+        return {
+          success: false,
+          error: 'blocked_by_preferences',
+        };
+      }
 
       // Render template if provided
       if (options.template) {
@@ -44,10 +152,10 @@ export class EmailService {
         const passwordResetPath = require.resolve('../templates/passwordReset');
         delete require.cache[templatesPath];
         delete require.cache[passwordResetPath];
-        
+
         const template = require('../templates').getTemplate(options.template);
         const data = options.data || {};
-        
+
         logger.info('Rendering email template', {
           template: options.template,
           platformName: data.platformName,
@@ -56,13 +164,13 @@ export class EmailService {
           providedSubject: options.subject,
           willGenerateSubject: !options.subject || options.subject.trim() === '',
         });
-        
+
         // Handle dynamic subject from template
         // Always use template's subject function if available to ensure platformName is used correctly
         // If subject is empty or not provided, always use template's subject function
         if (template && typeof template.subject === 'function') {
           const generatedSubject = template.subject(data);
-          
+
           logger.info('Template subject function called in sendEmail', {
             template: options.template,
             platformName: data.platformName,
@@ -71,7 +179,7 @@ export class EmailService {
             dataKeys: Object.keys(data),
             willUseGenerated: !subject || subject.trim() === '',
           });
-          
+
           // Always use the template's generated subject (especially if subject is empty)
           // This ensures platformName is always used correctly
           subject = generatedSubject;
@@ -87,10 +195,36 @@ export class EmailService {
             subjectValue: template?.subject,
           });
         }
-        
+
         const rendered = TemplateService.render(options.template, data);
         html = rendered.html;
         text = rendered.text;
+
+        // Add logo attachment for email_verification template if not already provided
+        if (options.template === 'email_verification' && !options.attachments) {
+          try {
+            logger.info('Fetching logo for email verification template', { to: options.to });
+            const logoBuffer = await fetchLogoAsBuffer('https://i.ibb.co/Zt9jNcs/logo.png');
+
+            if (logoBuffer) {
+              options.attachments = [{
+                filename: 'logo.png',
+                content: logoBuffer,
+                contentType: 'image/png',
+                cid: 'extrahand-logo',
+              }];
+              logger.info('Logo attached to email verification', {
+                to: options.to,
+                logoSize: logoBuffer.length,
+              });
+            }
+          } catch (error: any) {
+            logger.warn('Failed to attach logo to email verification', {
+              to: options.to,
+              error: error.message,
+            });
+          }
+        }
       }
 
       // Validate
@@ -189,7 +323,7 @@ export class EmailService {
   }
 
   // Convenience methods
-  
+
   /**
    * Send admin invite email with logo as CID attachment (bulletproof for Outlook)
    */
@@ -210,13 +344,13 @@ export class EmailService {
       contentType: string;
       cid: string;
     }> | undefined = undefined;
-    
+
     try {
       logger.info('Fetching logo for CID attachment', { email });
-      
+
       // Fetch logo from the hosted URL (imgbb.co)
       const logoBuffer = await fetchLogoAsBuffer('https://i.ibb.co/Zt9jNcs/logo.png');
-      
+
       if (logoBuffer) {
         logoAttachment = [{
           filename: 'logo.png',
@@ -243,7 +377,7 @@ export class EmailService {
 
     const defaultPlatformName = "Partner Onboarding Platform";
     const finalPlatformName = platformName || defaultPlatformName;
-    
+
     return this.sendEmail({
       to: email,
       subject: `You've been invited to join ExtraHand ${finalPlatformName} Team`,
@@ -294,12 +428,12 @@ export class EmailService {
     });
     const formattedExpiresAt = expiresAt
       ? expiresAt.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        })
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
       : undefined;
 
     // Always use CID attachment - fetch logo from URL and attach inline
@@ -310,13 +444,13 @@ export class EmailService {
       contentType: string;
       cid: string;
     }> | undefined = undefined;
-    
+
     try {
       logger.info('Fetching logo for CID attachment', { email });
-      
+
       // Fetch logo from the hosted URL (imgbb.co)
       const logoBuffer = await fetchLogoAsBuffer('https://i.ibb.co/Zt9jNcs/logo.png');
-      
+
       if (logoBuffer) {
         logoAttachment = [{
           filename: 'logo.png',
@@ -343,8 +477,8 @@ export class EmailService {
 
     // Use provided platformName, or default to "Partner Onboarding Platform" for backward compatibility
     // Note: Content Admin Portal should pass "Content Admin Portal" explicitly
-    const finalPlatformName = (platformName && typeof platformName === 'string' && platformName.trim() !== '') 
-      ? platformName.trim() 
+    const finalPlatformName = (platformName && typeof platformName === 'string' && platformName.trim() !== '')
+      ? platformName.trim()
       : "Partner Onboarding Platform";
 
     logger.info('Determining platformName for password reset', {
@@ -362,7 +496,7 @@ export class EmailService {
       expiresAt: formattedExpiresAt,
       platformName: finalPlatformName,
     };
-    
+
     logger.info('Sending password reset email', {
       email,
       platformName: finalPlatformName,
