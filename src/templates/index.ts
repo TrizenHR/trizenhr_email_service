@@ -34,6 +34,7 @@ import { verificationApprovedTemplate } from './verificationApproved';
 import { verificationRejectedTemplate } from './verificationRejected';
 import { documentReminderTemplate } from './documentReminder';
 import { verificationStatusTemplate } from './verificationStatus';
+import { verificationConfirmedTemplate } from './verificationConfirmed';
 
 // Payment Templates
 import { paymentReceivedTemplate } from './paymentReceived';
@@ -78,6 +79,7 @@ export const templates: Record<string, EmailTemplate> = {
   verification_rejected: verificationRejectedTemplate,
   document_reminder: documentReminderTemplate,
   verification_status: verificationStatusTemplate,
+  verification_confirmed: verificationConfirmedTemplate,
 
   // Payment
   payment_received: paymentReceivedTemplate,

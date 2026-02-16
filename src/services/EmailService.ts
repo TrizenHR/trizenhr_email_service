@@ -37,6 +37,7 @@ const TEMPLATE_CATEGORY_MAP: Record<string, EmailPreferenceCategory> = {
   application_withdrawn: 'taskUpdates',
   completion_proof_submitted: 'taskUpdates',
   review_request: 'taskUpdates',
+  verification_confirmed: 'transactional',
 };
 
 export class EmailService {
