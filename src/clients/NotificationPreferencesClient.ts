@@ -12,7 +12,6 @@ export type NotificationCategory =
     | 'taskReminders'
     | 'keywordTaskAlerts'
     | 'recommendedTaskAlerts';
-
 /**
  * Client for checking user notification preferences from user-service
  * This should be called before sending any email to respect user preferences
