@@ -201,6 +201,47 @@ export class EmailService {
         html = rendered.html;
         text = rendered.text;
 
+        const needsCidLogo = typeof html === 'string' && html.includes('cid:extrahand-logo');
+        const hasCidLogo = Array.isArray(options.attachments)
+          && options.attachments.some((attachment: any) => attachment?.cid === 'extrahand-logo');
+
+        if (needsCidLogo && !hasCidLogo) {
+          try {
+            logger.info('Fetching logo for CID attachment', { to: options.to, template: options.template });
+            const logoBuffer = await fetchLogoAsBuffer();
+
+            if (logoBuffer) {
+              const logoAttachment = {
+                filename: 'logo.png',
+                content: logoBuffer,
+                contentType: 'image/png',
+                cid: 'extrahand-logo',
+              };
+
+              options.attachments = Array.isArray(options.attachments)
+                ? [...options.attachments, logoAttachment]
+                : [logoAttachment];
+
+              logger.info('Logo attached with CID successfully', {
+                to: options.to,
+                template: options.template,
+                logoSize: logoBuffer.length,
+              });
+            } else {
+              logger.warn('Logo fetch failed, email will be sent without logo', {
+                to: options.to,
+                template: options.template,
+              });
+            }
+          } catch (error: any) {
+            logger.warn('Failed to attach logo', {
+              to: options.to,
+              template: options.template,
+              error: error.message,
+            });
+          }
+        }
+
         // Add logo attachment for email_verification template if not already provided
         if (options.template === 'email_verification' && !options.attachments) {
           try {
