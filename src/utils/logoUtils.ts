@@ -13,8 +13,28 @@ import logger from '../config/logger';
  * 3. Returns null on failure (doesn't throw)
  */
 export async function fetchLogoAsBuffer(logoUrl?: string): Promise<Buffer | null> {
+  // Try local file first, then fallback to URL
+  const localLogoPath = path.join(__dirname, '../../public/logo.png');
+  
+  // Check if local logo exists first
+  if (fs.existsSync(localLogoPath)) {
+    try {
+      const buffer = fs.readFileSync(localLogoPath);
+      logger.info('Logo loaded from local file', {
+        path: localLogoPath,
+        size: buffer.length,
+      });
+      return buffer;
+    } catch (error: any) {
+      logger.warn('Error reading local logo file, will try URL fallback', { 
+        error: error.message 
+      });
+    }
+  }
+  
+  // Fallback to URL
   const url = logoUrl || process.env.LOGO_URL || 
-    'https://i.ibb.co/Zt9jNcs/logo.png';
+    'https://extrahand.in/logo.png';
   
   // Check if it's a local file path
   if (url.startsWith('/') || url.startsWith('./') || url.startsWith('../') || !url.includes('://')) {
