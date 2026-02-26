@@ -110,7 +110,7 @@ export const refundProcessedTemplate: EmailTemplate = {
               <p style="margin:0 0 8px;color:#6b7280;font-size:13px;line-height:1.6;">This is an automated notification.</p>
               <p style="margin:0 0 8px;font-size:13px;">
                 <a href="https://extrahand.in/payments" style="color:#F59E0B;text-decoration:none;">Payments</a> ·
-                <a href="https://extrahand.in/help" style="color:#F59E0B;text-decoration:none;">Help Center</a>
+                <a href="https://support.extrahand.in/" style="color:#F59E0B;text-decoration:none;">Help Center</a>
               </p>
               <p style="margin:0;color:#9ca3af;font-size:12px;">© ${new Date().getFullYear()} ExtraHand. All rights reserved.</p>
             </td>

@@ -79,7 +79,7 @@ export const emailVerificationTemplate: EmailTemplate = {
             <td style="background:#f9fafb;padding:20px 32px;text-align:center;border-top:1px solid #e5e7eb;">
               <p style="margin:0 0 8px;color:#6b7280;font-size:13px;line-height:1.6;">This is an automated email.</p>
               <p style="margin:0 0 8px;font-size:13px;">
-                <a href="https://extrahand.in/help" style="color:#F59E0B;text-decoration:none;">Help Center</a> ·
+                <a href="https://support.extrahand.in/" style="color:#F59E0B;text-decoration:none;">Help Center</a> ·
                 <a href="https://extrahand.in/contact" style="color:#F59E0B;text-decoration:none;">Contact Us</a>
               </p>
               <p style="margin:0;color:#9ca3af;font-size:12px;">© ${new Date().getFullYear()} ExtraHand. All rights reserved.</p>
