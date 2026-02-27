@@ -108,7 +108,7 @@ export const invoiceTemplate: EmailTemplate = {
               <p style="margin:0 0 8px;color:#6b7280;font-size:13px;line-height:1.6;">This is an automated invoice.</p>
               <p style="margin:0 0 8px;font-size:13px;">
                 <a href="https://extrahand.in/invoices" style="color:#F59E0B;text-decoration:none;">All Invoices</a> ·
-                <a href="https://support.extrahand.in/" style="color:#F59E0B;text-decoration:none;">Help Center</a>
+                <a href="https://extrhand-support-frontend.apps.extrahand.in" style="color:#F59E0B;text-decoration:none;">Help Center</a>
               </p>
               <p style="margin:0;color:#9ca3af;font-size:12px;">© ${new Date().getFullYear()} ExtraHand. All rights reserved.</p>
             </td>

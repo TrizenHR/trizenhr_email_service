@@ -79,7 +79,7 @@ export const verificationRejectedTemplate: EmailTemplate = {
               <p style="margin:0 0 8px;color:#6b7280;font-size:13px;line-height:1.6;">This is an automated email.</p>
               <p style="margin:0 0 8px;font-size:13px;">
                 <a href="https://support.extrahand.in/verification" style="color:#F59E0B;text-decoration:none;">Verification Help</a> ·
-                <a href="https://extrahand.in/contact" style="color:#F59E0B;text-decoration:none;">Contact Us</a>
+                <a href="https://extrhand-support-frontend.apps.extrahand.in" style="color:#F59E0B;text-decoration:none;">Contact Us</a>
               </p>
               <p style="margin:0;color:#9ca3af;font-size:12px;">© ${new Date().getFullYear()} ExtraHand. All rights reserved.</p>
             </td>
