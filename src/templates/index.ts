@@ -18,6 +18,7 @@ import { taskPostedConfirmationTemplate } from './taskPostedConfirmation';
 import { taskAssignedRequesterTemplate } from './taskAssignedRequester';
 import { taskCancelledTemplate } from './taskCancelled';
 import { taskStartedTemplate } from './taskStarted';
+import { taskStartOtpTemplate } from './taskStartOtp';
 import { completionProofSubmittedTemplate } from './completionProofSubmitted';
 import { applicationSubmittedTemplate } from './applicationSubmitted';
 import { applicationAcceptedTemplate } from './applicationAccepted';
@@ -63,6 +64,7 @@ export const templates: Record<string, EmailTemplate> = {
   task_assigned_requester: taskAssignedRequesterTemplate,
   task_cancelled: taskCancelledTemplate,
   task_started: taskStartedTemplate,
+    task_start_otp: taskStartOtpTemplate,
   completion_proof_submitted: completionProofSubmittedTemplate,
   application_submitted: applicationSubmittedTemplate,
   application_accepted: applicationAcceptedTemplate,
