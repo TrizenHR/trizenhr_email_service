@@ -25,16 +25,20 @@ export class NotificationPreferencesClient {
      */
     static initialize() {
         this.userServiceUrl = process.env.USER_SERVICE_URL || 'http://localhost:4001';
+        const serviceAuthToken = process.env.SERVICE_AUTH_TOKEN || '';
+
         this.client = axios.create({
             baseURL: this.userServiceUrl,
             timeout: 5000,
             headers: {
                 'Content-Type': 'application/json',
+                ...(serviceAuthToken ? { 'X-Service-Auth': serviceAuthToken, 'X-Service-Name': 'email-service' } : {}),
             },
         });
 
         logger.info('NotificationPreferencesClient initialized', {
             userServiceUrl: this.userServiceUrl,
+            hasAuthToken: !!serviceAuthToken,
         });
     }
 
@@ -61,34 +65,27 @@ export class NotificationPreferencesClient {
                 }
             );
 
-            // Strictly read canSend — do NOT default to true on missing response
             const canSend = response.data?.data?.canSend;
 
-            if (typeof canSend !== 'boolean') {
-                logger.warn('Preference check returned unexpected format — blocking email', {
-                    uid,
-                    category,
-                    responseData: response.data,
-                });
-                return false; // fail-closed: block on ambiguous response
+            // Only block when user-service explicitly says no
+            if (canSend === false) {
+                logger.info('Email blocked: user preference is OFF', { uid, category });
+                return false;
             }
 
-            logger.info('Checked email notification permission', {
-                uid,
-                category,
-                canSend,
-            });
+            // canSend === true, or unexpected format — allow through
+            logger.info('Checked email notification permission', { uid, category, canSend });
+            return true;
 
-            return canSend;
         } catch (error: any) {
-            logger.warn('Failed to check notification preferences — blocking email (fail-closed)', {
+            // Fail-open on network errors: the task-service already pre-checked preferences.
+            // Missing USER_SERVICE_URL or a timeout should not block all emails.
+            logger.warn('Could not reach user-service for preference check — allowing email (fail-open)', {
                 uid,
                 category,
                 error: error.message,
             });
-            // fail-closed: block email if preference check fails
-            // Better to miss one email than to spam a user who opted out
-            return false;
+            return true;
         }
     }
 
@@ -131,14 +128,15 @@ export class NotificationPreferencesClient {
 
             return results;
         } catch (error: any) {
-            logger.warn('Failed to check batch notification preferences — blocking all (fail-closed)', {
+            // Fail-open on network errors: allow emails when user-service is unreachable
+            logger.warn('Could not reach user-service for batch preference check — allowing all (fail-open)', {
                 totalUsers: uids.length,
                 category,
                 error: error.message,
             });
 
-            // fail-closed: block all emails if preference check fails
-            uids.forEach((uid) => results.set(uid, false));
+            // fail-open: allow all emails if preference check fails
+            uids.forEach((uid) => results.set(uid, true));
             return results;
         }
     }

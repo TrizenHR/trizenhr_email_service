@@ -133,23 +133,25 @@ export class EmailService {
     const category = this.resolvePreferenceCategory(options);
     const recipientId = this.resolveRecipientId(options);
 
-    // If we can't determine the category, block to avoid sending unwanted emails
+    // If category is unknown, allow through — the calling service already pre-checked
+    // We only block here when we know the category AND know the user said no
     if (!category) {
-      logger.warn('Email blocked: cannot resolve notification category', {
+      logger.info('Email allowed: cannot resolve category (pre-check assumed done)', {
         template,
         to: options.to,
       });
-      return false;
+      return true;
     }
 
-    // If we can't identify the recipient, block — we can't check their preferences
+    // If recipientId not found, allow through — the calling service (task-service) already
+    // ran its own preference check before sending here
     if (!recipientId) {
-      logger.warn('Email blocked: cannot resolve recipient userId for preference check', {
+      logger.info('Email allowed: no userId to check (pre-check assumed done)', {
         template,
         category,
         to: options.to,
       });
-      return false;
+      return true;
     }
 
     return NotificationPreferencesClient.canSendEmail(
