@@ -21,8 +21,26 @@ type EmailPreferenceCategory =
   | 'system'
   | 'marketing';
 
+// Templates that are ALWAYS sent regardless of preferences (auth/security)
+const ALWAYS_SEND_TEMPLATES = new Set([
+  'email_verification',
+  'password_reset',
+  'login_alert',
+  'account_created',
+  'welcome',
+  'admin_invite',
+  'account_suspended',
+  'suspension',
+  'ban',
+  'task_start_otp', // OTP is security-critical
+]);
+
 const TEMPLATE_CATEGORY_MAP: Record<string, EmailPreferenceCategory> = {
+  // Transactional (account actions)
   task_posted_confirmation: 'transactional',
+  verification_confirmed: 'transactional',
+
+  // Task Updates — ALL task lifecycle emails
   task_reminder: 'taskReminders',
   task_created_keyword: 'keywordTaskAlerts',
   task_created_recommended: 'recommendedTaskAlerts',
@@ -37,7 +55,13 @@ const TEMPLATE_CATEGORY_MAP: Record<string, EmailPreferenceCategory> = {
   application_withdrawn: 'taskUpdates',
   completion_proof_submitted: 'taskUpdates',
   review_request: 'taskUpdates',
-  verification_confirmed: 'transactional',
+
+  // Verification
+  verification_request: 'transactional',
+  verification_approved: 'transactional',
+  verification_rejected: 'transactional',
+  verification_status: 'transactional',
+  document_reminder: 'transactional',
 };
 
 export class EmailService {
@@ -99,11 +123,33 @@ export class EmailService {
   }
 
   private static async isEmailAllowed(options: EmailOptions): Promise<boolean> {
+    const template = options.template;
+
+    // Always send auth/security emails — never gated by preferences
+    if (template && ALWAYS_SEND_TEMPLATES.has(template)) {
+      return true;
+    }
+
     const category = this.resolvePreferenceCategory(options);
     const recipientId = this.resolveRecipientId(options);
 
-    if (!category || !recipientId) {
-      return true;
+    // If we can't determine the category, block to avoid sending unwanted emails
+    if (!category) {
+      logger.warn('Email blocked: cannot resolve notification category', {
+        template,
+        to: options.to,
+      });
+      return false;
+    }
+
+    // If we can't identify the recipient, block — we can't check their preferences
+    if (!recipientId) {
+      logger.warn('Email blocked: cannot resolve recipient userId for preference check', {
+        template,
+        category,
+        to: options.to,
+      });
+      return false;
     }
 
     return NotificationPreferencesClient.canSendEmail(

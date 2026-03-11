@@ -61,7 +61,17 @@ export class NotificationPreferencesClient {
                 }
             );
 
-            const canSend = response.data?.data?.canSend ?? true; // Default to true if service is unavailable
+            // Strictly read canSend — do NOT default to true on missing response
+            const canSend = response.data?.data?.canSend;
+
+            if (typeof canSend !== 'boolean') {
+                logger.warn('Preference check returned unexpected format — blocking email', {
+                    uid,
+                    category,
+                    responseData: response.data,
+                });
+                return false; // fail-closed: block on ambiguous response
+            }
 
             logger.info('Checked email notification permission', {
                 uid,
@@ -71,14 +81,14 @@ export class NotificationPreferencesClient {
 
             return canSend;
         } catch (error: any) {
-            logger.warn('Failed to check notification preferences, defaulting to allow', {
+            logger.warn('Failed to check notification preferences — blocking email (fail-closed)', {
                 uid,
                 category,
                 error: error.message,
             });
-            // On error, default to allowing the email (fail open for critical notifications)
-            // This ensures emails are sent even if the user-service is temporarily unavailable
-            return true;
+            // fail-closed: block email if preference check fails
+            // Better to miss one email than to spam a user who opted out
+            return false;
         }
     }
 
@@ -121,14 +131,14 @@ export class NotificationPreferencesClient {
 
             return results;
         } catch (error: any) {
-            logger.warn('Failed to check batch notification preferences, defaulting to allow all', {
+            logger.warn('Failed to check batch notification preferences — blocking all (fail-closed)', {
                 totalUsers: uids.length,
                 category,
                 error: error.message,
             });
 
-            // On error, default to allowing all emails
-            uids.forEach((uid) => results.set(uid, true));
+            // fail-closed: block all emails if preference check fails
+            uids.forEach((uid) => results.set(uid, false));
             return results;
         }
     }
