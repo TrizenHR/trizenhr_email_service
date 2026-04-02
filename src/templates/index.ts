@@ -41,7 +41,9 @@ import { verificationConfirmedTemplate } from './verificationConfirmed';
 import { paymentReceivedTemplate } from './paymentReceived';
 import { paymentFailedTemplate } from './paymentFailed';
 import { escrowReleasedTemplate } from './escrowReleased';
+import { refundInitiatedTemplate } from './refundInitiated';
 import { refundProcessedTemplate } from './refundProcessed';
+import { payoutInitiatedTemplate } from './payoutInitiated';
 import { invoiceTemplate } from './invoice';
 import { paymentReminderTemplate } from './paymentReminder';
 
@@ -87,7 +89,9 @@ export const templates: Record<string, EmailTemplate> = {
   payment_received: paymentReceivedTemplate,
   payment_failed: paymentFailedTemplate,
   escrow_released: escrowReleasedTemplate,
+  refund_initiated: refundInitiatedTemplate,
   refund_processed: refundProcessedTemplate,
+  payout_initiated: payoutInitiatedTemplate,
   invoice: invoiceTemplate,
   payment_reminder: paymentReminderTemplate,
 };
