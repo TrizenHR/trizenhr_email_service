@@ -32,7 +32,7 @@ export class EmailController {
    * POST /api/v1/email/admin-invite
    */
   static sendAdminInviteEmail = asyncHandler(async (req: Request, res: Response) => {
-    const { email, role, inviteLink, expiresAt, team, department, platformName } = req.body;
+    const { email, role, inviteLink, expiresAt, team, department, platformName, name } = req.body;
     
     if (!email || !role || !inviteLink || !expiresAt) {
       return res.status(400).json({
@@ -55,7 +55,8 @@ export class EmailController {
       new Date(expiresAt),
       team,
       department,
-      platformName
+      platformName,
+      name
     ).catch((error: any) => {
       logger.error('Background admin invite email send failed', {
         email,
