@@ -33,6 +33,8 @@ const ALWAYS_SEND_TEMPLATES = new Set([
   'suspension',
   'ban',
   'task_start_otp', // OTP is security-critical
+  'organization_created_support',
+  'trizen_role_invite',
 ]);
 
 const TEMPLATE_CATEGORY_MAP: Record<string, EmailPreferenceCategory> = {
@@ -412,6 +414,23 @@ export class EmailService {
     });
   }
 
+  private static normalizeRole(role: string): string {
+    return (role || '').trim().toLowerCase().replace(/\s+/g, '_');
+  }
+
+  private static getRoleLabel(role: string): string {
+    const normalizedRole = this.normalizeRole(role);
+    const labels: Record<string, string> = {
+      company_admin: 'Company Admin',
+      hr_admin: 'HR Admin',
+      manager: 'Manager',
+      employee: 'Employee',
+      super_admin: 'System Admin',
+    };
+
+    return labels[normalizedRole] || role;
+  }
+
   // Convenience methods
 
   /**
@@ -488,6 +507,97 @@ export class EmailService {
       },
       attachments: logoAttachment, // CID attachment - bulletproof for Outlook
       metadata: { type: 'admin_invite', source: 'ticket_portal' },
+    });
+  }
+
+  static async sendOrganizationCreatedEmails(params: {
+    organizationName: string;
+    companyAdminEmail: string;
+    companyAdminInviteLink: string;
+    inviteExpiresAt: Date;
+    companyAdminName?: string;
+    createdByName?: string;
+    createdByEmail?: string;
+    platformName?: string;
+    supportEmail?: string;
+  }) {
+    const supportEmail = params.supportEmail || this.env.TRIZEN_SUPPORT_EMAIL || 'support@trizenventures.com';
+    const platformName = params.platformName || 'TrizenHR';
+
+    const supportNotificationResult = await this.sendEmail({
+      to: supportEmail,
+      subject: `TrizenHR Organization Created: ${params.organizationName}`,
+      template: 'organization_created_support',
+      data: {
+        organizationName: params.organizationName,
+        companyAdminEmail: params.companyAdminEmail,
+        companyAdminName: params.companyAdminName,
+        createdByName: params.createdByName,
+        createdByEmail: params.createdByEmail,
+        createdAt: new Date(),
+        platformName,
+      },
+      metadata: {
+        type: 'organization_created_support',
+        organizationName: params.organizationName,
+      },
+    });
+
+    const companyAdminInviteResult = await this.sendTrizenRoleInvitationEmail({
+      email: params.companyAdminEmail,
+      role: 'company_admin',
+      inviteLink: params.companyAdminInviteLink,
+      expiresAt: params.inviteExpiresAt,
+      organizationName: params.organizationName,
+      inviterName: params.createdByName || 'System Admin',
+      platformName,
+      name: params.companyAdminName,
+      supportEmail,
+    });
+
+    return {
+      supportNotificationResult,
+      companyAdminInviteResult,
+    };
+  }
+
+  static async sendTrizenRoleInvitationEmail(params: {
+    email: string;
+    role: string;
+    inviteLink: string;
+    expiresAt: Date;
+    organizationName?: string;
+    inviterName?: string;
+    platformName?: string;
+    name?: string;
+    supportEmail?: string;
+  }) {
+    const normalizedRole = this.normalizeRole(params.role);
+    const supportEmail = params.supportEmail || this.env.TRIZEN_SUPPORT_EMAIL || 'support@trizenventures.com';
+    const platformName = params.platformName || 'TrizenHR';
+    const roleLabel = this.getRoleLabel(normalizedRole);
+
+    const bcc = normalizedRole === 'company_admin' ? supportEmail : undefined;
+
+    return this.sendEmail({
+      to: params.email,
+      bcc,
+      subject: `${platformName} Invitation - ${roleLabel}`,
+      template: 'trizen_role_invite',
+      data: {
+        role: normalizedRole,
+        inviteLink: params.inviteLink,
+        expiresAt: params.expiresAt,
+        platformName,
+        organizationName: params.organizationName,
+        name: params.name,
+        inviterName: params.inviterName,
+      },
+      metadata: {
+        type: 'trizen_role_invite',
+        role: normalizedRole,
+        organizationName: params.organizationName,
+      },
     });
   }
 

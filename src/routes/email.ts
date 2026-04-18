@@ -10,6 +10,8 @@ router.use(serviceAuthMiddleware);
 // Email routes
 router.post('/send', EmailController.sendEmail);
 router.post('/admin-invite', EmailController.sendAdminInviteEmail);
+router.post('/organization-created', EmailController.sendOrganizationCreatedEmail);
+router.post('/role-invitation', EmailController.sendRoleInvitationEmail);
 router.post('/account-created', EmailController.sendAccountCreatedEmail);
 router.post('/password-reset', EmailController.sendPasswordResetEmail);
 router.post('/suspension', EmailController.sendSuspensionEmail);

@@ -10,6 +10,8 @@ import { loginAlertTemplate } from './loginAlert';
 import { accountSuspendedTemplate } from './accountSuspended';
 import { suspensionTemplate } from './suspension';
 import { banTemplate } from './ban';
+import { organizationCreatedSupportTemplate } from './organizationCreatedSupport';
+import { trizenRoleInviteTemplate } from './trizenRoleInvite';
 
 // Task Templates
 import { taskCreatedRecommendedTemplate } from './taskCreatedRecommended';
@@ -58,6 +60,8 @@ export const templates: Record<string, EmailTemplate> = {
   account_suspended: accountSuspendedTemplate,
   suspension: suspensionTemplate,
   ban: banTemplate,
+  organization_created_support: organizationCreatedSupportTemplate,
+  trizen_role_invite: trizenRoleInviteTemplate,
 
   // Task
   task_created_recommended: taskCreatedRecommendedTemplate,

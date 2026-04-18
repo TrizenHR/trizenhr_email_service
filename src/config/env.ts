@@ -41,6 +41,9 @@ const envSchema = z.object({
   WEB_APP_URL: z.string().url('Invalid web app URL').default('https://extrahand.in'),
   MOBILE_APP_DEEP_LINK: z.string().default('extrahand://'),
   LOGO_URL: z.string().url('Invalid logo URL').optional(),
+
+  // TrizenHR support mailbox for onboarding notifications
+  TRIZEN_SUPPORT_EMAIL: z.string().email('Invalid Trizen support email').default('support@trizenventures.com'),
   
   // Logging
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
