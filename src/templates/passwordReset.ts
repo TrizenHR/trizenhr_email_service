@@ -8,7 +8,6 @@ export interface PasswordResetTemplateData {
 }
 
 import { EXTRAHAND_LOGO_SVG } from './logo';
-console.log("This endpoint is called for password reset")
 export const passwordResetTemplate: EmailTemplate = {
   name: 'password_reset',
   subject: (data: PasswordResetTemplateData) => {
