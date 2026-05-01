@@ -75,11 +75,26 @@ export function createApp(): Application {
     );
   }
 
+  // Base routes
+  app.get('/', (_req, res) => {
+    res.json({
+      success: true,
+      service: 'trizenhr-email-service',
+      message: 'Email service is running',
+      version: '1.0.0',
+    });
+  });
+
+  app.get('/favicon.ico', (_req, res) => {
+    res.status(204).end();
+  });
+
   // Routes
   app.use('/api/v1', routes);
 
   // 404 handler
   app.use((req, res) => {
+    logger.warn(`404: Not Found: ${req.method} ${req.path}`);
     res.status(404).json({
       success: false,
       error: 'Not Found',

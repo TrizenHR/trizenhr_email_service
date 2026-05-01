@@ -34,7 +34,7 @@ export async function fetchLogoAsBuffer(logoUrl?: string): Promise<Buffer | null
   
   // Fallback to URL
   const url = logoUrl || process.env.LOGO_URL || 
-    'https://extrahand.in/logo.png';
+    'https://i.ibb.co/Zt9jNcs/logo.png';
   
   // Check if it's a local file path
   if (url.startsWith('/') || url.startsWith('./') || url.startsWith('../') || !url.includes('://')) {

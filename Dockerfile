@@ -110,6 +110,7 @@ COPY --from=dependencies --chown=nodeuser:nodejs /app/node_modules ./node_module
 # Copy compiled JavaScript from build stage
 COPY --from=build --chown=nodeuser:nodejs /app/dist ./dist
 COPY --from=build --chown=nodeuser:nodejs /app/package.json ./
+COPY --from=build --chown=nodeuser:nodejs /app/public ./public
 
 # Create logs directory with proper permissions
 RUN mkdir -p logs && chown -R nodeuser:nodejs logs

@@ -5,70 +5,6 @@ import logger from '../config/logger';
 
 export class EmailController {
   /**
-   * Send generic email
-   * POST /api/v1/email/send
-   */
-  static sendEmail = asyncHandler(async (req: Request, res: Response) => {
-    // Return immediately - process email in background
-    res.json({
-      success: true,
-      message: 'Email queued for sending'
-    });
-    
-    // Process email asynchronously (don't await)
-    EmailService.sendEmail(req.body).catch((error: any) => {
-      logger.error('Background email send failed', {
-        to: req.body.to,
-        subject: req.body.subject,
-        error: error.message
-      });
-    });
-    
-    return;
-  });
-
-  /**
-   * Send admin invite email
-   * POST /api/v1/email/admin-invite
-   */
-  static sendAdminInviteEmail = asyncHandler(async (req: Request, res: Response) => {
-    const { email, role, inviteLink, expiresAt, team, department, platformName, name } = req.body;
-    
-    if (!email || !role || !inviteLink || !expiresAt) {
-      return res.status(400).json({
-        success: false,
-        error: 'email, role, inviteLink, and expiresAt are required'
-      });
-    }
-    
-    // Return immediately - process email in background
-    res.json({
-      success: true,
-      message: 'Email queued for sending'
-    });
-    
-    // Process email asynchronously (don't await)
-    EmailService.sendAdminInviteEmail(
-      email,
-      role,
-      inviteLink,
-      new Date(expiresAt),
-      team,
-      department,
-      platformName,
-      name
-    ).catch((error: any) => {
-      logger.error('Background admin invite email send failed', {
-        email,
-        role,
-        error: error.message
-      });
-    });
-    
-    return;
-  });
-
-  /**
    * Send onboarding emails when organization is created.
    * POST /api/v1/email/organization-created
    */
@@ -185,38 +121,6 @@ export class EmailController {
   });
 
   /**
-   * Send account created email
-   * POST /api/v1/email/account-created
-   */
-  static sendAccountCreatedEmail = asyncHandler(async (req: Request, res: Response) => {
-    const { email, name, phone } = req.body;
-    
-    if (!email || !name) {
-      return res.status(400).json({
-        success: false,
-        error: 'email and name are required'
-      });
-    }
-    
-    // Return immediately - process email in background
-    res.json({
-      success: true,
-      message: 'Email queued for sending'
-    });
-    
-    // Process email asynchronously (don't await)
-    EmailService.sendAccountCreatedEmail(email, name, phone).catch((error: any) => {
-      logger.error('Background account created email send failed', {
-        email,
-        name,
-        error: error.message
-      });
-    });
-    
-    return;
-  });
-
-  /**
    * Send password reset email
    * POST /api/v1/email/password-reset
    */
@@ -234,12 +138,6 @@ export class EmailController {
     logger.info('Password reset email request received', {
       email,
       platformName: platformName || 'not provided (will use default)',
-      platformNameType: typeof platformName,
-      platformNameValue: platformName,
-      hasPlatformName: !!platformName,
-      reqBodyKeys: Object.keys(req.body),
-      reqBodyPlatformName: req.body.platformName,
-      fullRequestBody: JSON.stringify(req.body),
     });
     
     // Return immediately - process email in background
@@ -249,95 +147,16 @@ export class EmailController {
     });
     
     // Process email asynchronously (don't await)
-    // Pass platformName directly - let EmailService handle the default
     EmailService.sendPasswordResetEmail(
       email,
       resetLink,
       name,
       expiresAt ? new Date(expiresAt) : undefined,
-      platformName // Pass as-is, EmailService will handle defaults
+      platformName
     ).catch((error: any) => {
       logger.error('Background password reset email send failed', {
         email,
         platformName,
-        error: error.message
-      });
-    });
-    
-    return;
-  });
-
-  /**
-   * Send suspension notification email
-   * POST /api/v1/email/suspension
-   */
-  static sendSuspensionEmail = asyncHandler(async (req: Request, res: Response) => {
-    const { email, name, suspendedUntil, reason, daysRemaining, contactInfo, platformName } = req.body;
-    
-    if (!email || !name || !suspendedUntil || !reason) {
-      return res.status(400).json({
-        success: false,
-        error: 'email, name, suspendedUntil, and reason are required'
-      });
-    }
-    
-    // Return immediately - process email in background
-    res.json({
-      success: true,
-      message: 'Email queued for sending'
-    });
-    
-    // Process email asynchronously (don't await)
-    EmailService.sendSuspensionEmail(
-      email,
-      name,
-      new Date(suspendedUntil),
-      reason,
-      daysRemaining,
-      contactInfo,
-      platformName
-    ).catch((error: any) => {
-      logger.error('Background suspension email send failed', {
-        email,
-        name,
-        error: error.message
-      });
-    });
-    
-    return;
-  });
-
-  /**
-   * Send ban notification email
-   * POST /api/v1/email/ban
-   */
-  static sendBanEmail = asyncHandler(async (req: Request, res: Response) => {
-    const { email, name, reason, contactInfo, platformName } = req.body;
-    
-    if (!email || !name || !reason) {
-      return res.status(400).json({
-        success: false,
-        error: 'email, name, and reason are required'
-      });
-    }
-    
-    // Return immediately - process email in background
-    res.json({
-      success: true,
-      message: 'Email queued for sending'
-    });
-    
-    // Process email asynchronously (don't await)
-    EmailService.sendBanEmail(
-      email,
-      name,
-      reason,
-      contactInfo,
-      platformName
-    ).catch((error: any) => {
-      logger.error('Background ban email send failed', {
-        email,
-        name,
         error: error.message
       });
     });
@@ -357,7 +176,7 @@ export class EmailController {
       success: true,
       data: {
         status: 'healthy',
-        service: 'extrahand-email-service',
+        service: 'trizenhr-email-service',
         provider: env.EMAIL_PROVIDER,
         from: env.EMAIL_FROM_ADDRESS,
         timestamp: new Date().toISOString(),

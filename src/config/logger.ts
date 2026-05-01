@@ -27,7 +27,7 @@ if (!fs.existsSync(logsDir)) {
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
   format: logFormat,
-  defaultMeta: { service: 'extrahand-email-service' },
+  defaultMeta: { service: 'trizenhr-email-service' },
   transports: [
     // Error log file
     new winston.transports.File({
@@ -61,14 +61,20 @@ const logger = winston.createLogger({
   ]
 });
 
-// Add console transport for non-production environments
-if (process.env.NODE_ENV !== 'production') {
-  logger.add(new winston.transports.Console({
-    format: winston.format.combine(
-      winston.format.colorize(),
-      winston.format.simple()
-    )
-  }));
-}
+// Always add console transport for Docker/CapRover monitoring
+logger.add(new winston.transports.Console({
+  format: process.env.NODE_ENV === 'production' 
+    ? winston.format.combine(
+        winston.format.timestamp(),
+        winston.format.json()
+      )
+    : winston.format.combine(
+        winston.format.colorize(),
+        winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        winston.format.printf(({ timestamp, level, message, ...meta }) => {
+          return `${timestamp} [${level}]: ${message} ${Object.keys(meta).length ? JSON.stringify(meta) : ''}`;
+        })
+      )
+}));
 
 export default logger;

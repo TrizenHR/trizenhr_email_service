@@ -1,5 +1,5 @@
 {
-  "name": "extrahand-email-service",
+  "name": "trizenhr-email-service",
   "version": "1.0.0",
   "description": "Email service for ExtraHand platform",
   "main": "dist/server.js",
