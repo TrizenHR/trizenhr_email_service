@@ -64,6 +64,7 @@ COPY tsconfig.json ./
 
 # Copy source code
 COPY src ./src
+COPY public ./public
 
 # ✨ CRITICAL: Add cache buster to force fresh code copy and build
 ARG CACHE_BUST=no-cache
