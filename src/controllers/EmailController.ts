@@ -6,7 +6,7 @@ import logger from '../config/logger';
 export class EmailController {
   /**
    * Send onboarding emails when organization is created.
-   * POST /api/v1/email/organization-created
+   * POST /api/v1/email/organization-created 
    */
   static sendOrganizationCreatedEmail = asyncHandler(async (req: Request, res: Response) => {
     const {
