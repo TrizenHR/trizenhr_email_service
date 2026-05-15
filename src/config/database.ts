@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import logger from './logger';
-
+ 
 let isConnected = false;
 
 export async function connectMongo(uri: string, dbName: string): Promise<typeof mongoose.connection> {

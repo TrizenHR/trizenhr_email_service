@@ -118,14 +118,6 @@ export class SMTPProvider {
         },
       };
 
-      if (this.isMicrosoft) {
-        mailOptions.headers = {
-          ...mailOptions.headers,
-          'X-MS-Exchange-Organization-AuthAs': 'Internal',
-          'X-MS-Exchange-Organization-AuthMechanism': '04',
-        };
-      }
-
       logger.debug('Sending email via SMTP', {
         to: payload.to,
         subject: payload.subject,
@@ -143,6 +135,9 @@ export class SMTPProvider {
 
       logger.info('Email sent successfully via SMTP', {
         messageId: info.messageId,
+        from: fromEmail,
+        to: payload.to,
+        subject: payload.subject,
         accepted: info.accepted,
         rejected: info.rejected,
       });

@@ -24,6 +24,7 @@ export function createApp(): Application {
     'http://localhost:4000',
     'http://localhost:4008',
     'http://localhost:4007',
+    'http://localhost:5000',
   ];
 
   if (env.CORS_ORIGIN) {

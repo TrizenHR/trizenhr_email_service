@@ -95,7 +95,6 @@ ENV LOG_LEVEL=info
 # Note: The following environment variables should be set at runtime via CapRover:
 # - MONGODB_URI
 # - MONGODB_DB
-# - SERVICE_AUTH_TOKEN
 # - EMAIL_PROVIDER (smtp, sendgrid, ses)
 # - SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS (for SMTP)
 # - SENDGRID_API_KEY (for SendGrid)
