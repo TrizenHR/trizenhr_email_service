@@ -7,7 +7,7 @@ export async function connectMongo(uri: string, dbName: string): Promise<typeof 
   if (!uri) {
     throw new Error('Missing MONGODB_URI');
   }
-  
+   
   if (isConnected) {
     return mongoose.connection;
   }
