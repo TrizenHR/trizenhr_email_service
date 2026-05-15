@@ -12,6 +12,7 @@ export async function connectMongo(uri: string, dbName: string): Promise<typeof 
     return mongoose.connection;
   }
   
+   
   mongoose.set('strictQuery', true);
   
   try {
