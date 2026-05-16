@@ -69,12 +69,11 @@ function roleCapabilities(role: string): string[] {
 export const trizenRoleInviteTemplate: EmailTemplate = {
   name: 'trizen_role_invite',
   subject: (data: TrizenRoleInviteTemplateData) => {
-    const platformName = data.platformName || 'TrizenHR';
-    return `${platformName} Invitation - ${roleLabel(data.role)}`;
+    const label = roleLabel(data.role);
+    return `${data.organizationName || 'TrizenHR'} — You're invited as ${label}`;
   },
 
   html: (data: TrizenRoleInviteTemplateData) => {
-    const platformName = data.platformName || 'TrizenHR';
     const label = roleLabel(data.role);
     const expiryDate = new Date(data.expiresAt).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -91,7 +90,7 @@ export const trizenRoleInviteTemplate: EmailTemplate = {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${platformName} Role Invitation</title>
+  <title>Invitation to join workspace</title>
 </head>
 <body style="margin:0;padding:24px;background:#f8fafc;font-family:Arial,sans-serif;color:#0f172a;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
@@ -99,35 +98,39 @@ export const trizenRoleInviteTemplate: EmailTemplate = {
       <td align="center">
         <table role="presentation" width="620" cellspacing="0" cellpadding="0" style="max-width:620px;background:#ffffff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;">
           <tr>
-            <td style="padding:14px 20px;background:#0f172a;color:#ffffff;font-size:14px;font-weight:600;">
-              ${platformName}
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:24px 20px;">
-              <h2 style="margin:0 0 12px;font-size:24px;color:#0f172a;">You're invited as ${label}</h2>
-              <p style="margin:0 0 14px;font-size:14px;line-height:22px;color:#334155;">
-                ${data.name ? `Hello ${data.name},` : 'Hello,'}
+            <td style="padding:32px 32px 24px;">
+              <h2 style="margin:0 0 16px;font-size:24px;color:#0f172a;font-weight:700;">You're invited as ${label}</h2>
+              <p style="margin:0 0 16px;font-size:16px;line-height:24px;color:#334155;">
+                Hello ${data.name || 'there'},
               </p>
-              <p style="margin:0 0 14px;font-size:14px;line-height:22px;color:#334155;">
-                You have been invited to join ${platformName}${data.organizationName ? ` for ${data.organizationName}` : ''} as <strong>${label}</strong>.
+              <p style="margin:0 0 16px;font-size:16px;line-height:24px;color:#334155;">
+                ${data.organizationName || 'Our organization'} has invited you to join their workspace as <strong>${label}</strong>.
               </p>
-              <p style="margin:0 0 10px;font-size:14px;line-height:22px;color:#334155;">What you can do:</p>
-              <ul style="margin:0 0 18px 18px;padding:0;color:#334155;font-size:14px;line-height:22px;">
+              
+              <p style="margin:24px 0 12px;font-size:15px;font-weight:600;color:#0f172a;">What you can do:</p>
+              <ul style="margin:0 0 24px 20px;padding:0;color:#334155;font-size:15px;line-height:24px;">
                 ${capabilities}
               </ul>
-              <table role="presentation" cellspacing="0" cellpadding="0" style="margin:12px 0 16px;">
+
+              <table role="presentation" cellspacing="0" cellpadding="0" style="margin:24px 0;">
                 <tr>
-                  <td style="border-radius:6px;background:#f59e0b;">
-                    <a href="${data.inviteLink}" style="display:inline-block;padding:12px 20px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;">
+                  <td style="border-radius:6px;background:#0f172a;">
+                    <a href="${data.inviteLink}" style="display:inline-block;padding:14px 28px;font-size:16px;font-weight:600;color:#ffffff;text-decoration:none;">
                       Accept Invitation
                     </a>
                   </td>
                 </tr>
               </table>
-              <p style="margin:0 0 8px;font-size:12px;color:#64748b;">This invitation expires on ${expiryDate}.</p>
-              <p style="margin:0 0 6px;font-size:12px;color:#64748b;word-break:break-all;">${data.inviteLink}</p>
-              ${data.inviterName ? `<p style="margin:10px 0 0;font-size:12px;color:#94a3b8;">Invited by ${data.inviterName}</p>` : ''}
+              
+              <p style="margin:0 0 24px;font-size:12px;color:#64748b;word-break:break-all;">
+                Or copy and paste this link into your browser:<br/>
+                <span style="color:#0f172a;">${data.inviteLink}</span>
+              </p>
+
+              <p style="margin:24px 0 8px;font-size:14px;color:#64748b;">This invitation expires on ${expiryDate}.</p>
+              <p style="margin:0;font-size:13px;color:#94a3b8;border-top:1px solid #f1f5f9;padding-top:16px;">
+                Powered by <strong>TrizenHR</strong>
+              </p>
             </td>
           </tr>
         </table>
@@ -140,7 +143,6 @@ export const trizenRoleInviteTemplate: EmailTemplate = {
   },
 
   text: (data: TrizenRoleInviteTemplateData) => {
-    const platformName = data.platformName || 'TrizenHR';
     const label = roleLabel(data.role);
     const expiryDate = new Date(data.expiresAt).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -150,18 +152,19 @@ export const trizenRoleInviteTemplate: EmailTemplate = {
     const capabilities = roleCapabilities(data.role).map((item) => `- ${item}`).join('\n');
 
     return `
-${platformName} ROLE INVITATION
+You're invited as ${label}
 
-${data.name ? `Hello ${data.name},` : 'Hello,'}
+Hello ${data.name || 'there'},
 
-You have been invited${data.organizationName ? ` to ${data.organizationName}` : ''} as ${label}.
+${data.organizationName || 'The organization'} has invited you to join their workspace as ${label}.
 
 What you can do:
 ${capabilities}
 
-Accept invitation: ${data.inviteLink}
-Expires on: ${expiryDate}
-${data.inviterName ? `Invited by: ${data.inviterName}` : ''}
+Accept Invitation: ${data.inviteLink}
+
+This invitation expires on ${expiryDate}.
+Powered by TrizenHR
 `;
   },
 };
