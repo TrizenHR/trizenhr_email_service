@@ -1,7 +1,12 @@
 import { z } from 'zod';
 import dotenv from 'dotenv';
+import path from 'path';
 
-dotenv.config();
+// Reload .env on every call so local restarts and CapRover env updates
+// are always reflected without needing a process restart.
+function loadEnv() {
+  dotenv.config({ path: path.resolve(process.cwd(), '.env'), override: true });
+}
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
@@ -36,6 +41,15 @@ const envSchema = z.object({
   EMAIL_FROM_ADDRESS: z.string().email('Invalid from email address'),
   EMAIL_FROM_NAME: z.string().default('ExtraHand'),
   EMAIL_REPLY_TO: z.string().email().optional(),
+
+  // Second sender — used for HR / Manager / Employee role invitations
+  // sent from the organisation's own support address.
+  SMTP_USER_ORG: z.string().email('Invalid org SMTP user email').optional(),
+  SMTP_PASS_ORG: z.string().optional(),
+  SMTP_HOST_ORG: z.string().optional(), // defaults to SMTP_HOST if not set
+  SMTP_PORT_ORG: z.string().transform(Number).optional(), // defaults to SMTP_PORT if not set
+  EMAIL_FROM_ADDRESS_ORG: z.string().email('Invalid org from email').optional(),
+  EMAIL_FROM_NAME_ORG: z.string().optional(),
   
   // Application URLs
   WEB_APP_URL: z.string().url('Invalid web app URL').default('https://extrahand.in'),
@@ -56,6 +70,8 @@ const envSchema = z.object({
 });
 
 export function validateEnv() {
+  // Re-read .env file every time so changes are picked up without restart
+  loadEnv();
   try {
     const env = envSchema.parse(process.env);
     
