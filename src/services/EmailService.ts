@@ -10,11 +10,16 @@ import { fetchLogoAsBuffer } from '../utils/logoUtils';
 
 export class EmailService {
   private static provider: any;
-  private static env = validateEnv();
+
+  /** Always read env fresh so new CapRover vars are picked up after restart. */
+  private static getEnv() {
+    return validateEnv();
+  }
 
   private static getProvider() {
     if (!this.provider) {
-      switch (this.env.EMAIL_PROVIDER) {
+      const env = this.getEnv();
+      switch (env.EMAIL_PROVIDER) {
         case 'sendgrid':
           this.provider = new SendGridProvider();
           break;
@@ -22,16 +27,17 @@ export class EmailService {
           this.provider = new SESProvider();
           break;
         case 'smtp':
+        default:
           this.provider = new SMTPProvider();
           break;
-        default:
-          throw new Error(`Unknown email provider: ${this.env.EMAIL_PROVIDER}`);
       }
     }
     return this.provider;
   }
 
   static async sendEmail(options: EmailOptions): Promise<EmailResult> {
+    // Read env fresh on every call — ensures CapRover env updates are picked up
+    const env = this.getEnv();
     try {
       let html = options.html;
       let text = options.text;
@@ -48,7 +54,6 @@ export class EmailService {
           platformName: data.platformName,
         });
 
-        // Handle dynamic subject from template
         if (template && typeof template.subject === 'function') {
           subject = template.subject(data);
         } else if (template && typeof template.subject === 'string') {
@@ -61,16 +66,14 @@ export class EmailService {
         html = rendered.html;
         text = rendered.text;
 
-        // Attachment logic (logo)
         const needsCidLogo = typeof html === 'string' && html.includes('cid:logo');
         const hasCidLogo = Array.isArray(options.attachments)
           && options.attachments.some((attachment: any) => attachment?.cid === 'logo');
 
         if (needsCidLogo && !hasCidLogo) {
           try {
-            const logoUrl = this.env.LOGO_URL || 'https://i.ibb.co/Zt9jNcs/logo.png';
+            const logoUrl = env.LOGO_URL || 'https://i.ibb.co/Zt9jNcs/logo.png';
             const logoBuffer = await fetchLogoAsBuffer(logoUrl);
-
             if (logoBuffer) {
               const logoAttachment = {
                 filename: 'logo.png',
@@ -78,7 +81,6 @@ export class EmailService {
                 contentType: 'image/png',
                 cid: 'logo',
               };
-
               options.attachments = Array.isArray(options.attachments)
                 ? [...options.attachments, logoAttachment]
                 : [logoAttachment];
@@ -89,22 +91,38 @@ export class EmailService {
         }
       }
 
-      // Validate
       if (!html && !text) {
         throw new Error('Either html, text, or template must be provided');
       }
 
-      // Get provider
+      // ── Sender routing ────────────────────────────────────────────────────
+      // HR / Manager / Employee invitations  → support@trizenventures.com
+      // Company Admin invitation + everything else → support@trizenhr.com
+      const isOrgRoleInvite =
+        options.metadata?.type === 'trizen_role_invite' &&
+        options.metadata?.role !== 'company_admin';
+
+      const fromAddress = isOrgRoleInvite && env.EMAIL_FROM_ADDRESS_ORG
+        ? env.EMAIL_FROM_ADDRESS_ORG
+        : env.EMAIL_FROM_ADDRESS;
+
+      const fromName = isOrgRoleInvite && env.EMAIL_FROM_NAME_ORG
+        ? env.EMAIL_FROM_NAME_ORG
+        : env.EMAIL_FROM_NAME;
+
+      logger.info('Sender routing decision', {
+        type: options.metadata?.type,
+        role: options.metadata?.role,
+        isOrgRoleInvite,
+        fromAddress,
+      });
+
       const provider = this.getProvider();
 
-      // Send email
       const result = await provider.send({
         to: options.to,
-        from: {
-          email: this.env.EMAIL_FROM_ADDRESS,
-          name: this.env.EMAIL_FROM_NAME,
-        },
-        replyTo: this.env.EMAIL_REPLY_TO,
+        from: { email: fromAddress, name: fromName },
+        replyTo: env.EMAIL_REPLY_TO,
         subject: subject || 'Notification',
         html: html || '',
         text: text || TemplateService.stripHtml(html || ''),
@@ -113,21 +131,17 @@ export class EmailService {
         attachments: options.attachments,
       });
 
-      // Log email (non-blocking)
       this.logEmail({
         to: Array.isArray(options.to) ? options.to : [options.to],
         subject: subject,
         template: options.template,
         status: 'sent',
         messageId: result.messageId,
-        provider: this.env.EMAIL_PROVIDER,
+        provider: env.EMAIL_PROVIDER,
         metadata: options.metadata,
       });
 
-      return {
-        success: true,
-        messageId: result.messageId,
-      };
+      return { success: true, messageId: result.messageId };
     } catch (error: any) {
       logger.error('Email send failed', {
         to: options.to,
@@ -142,14 +156,11 @@ export class EmailService {
         template: options.template,
         status: 'failed',
         error: error.message,
-        provider: this.env.EMAIL_PROVIDER,
+        provider: env.EMAIL_PROVIDER,
         metadata: options.metadata,
       });
 
-      return {
-        success: false,
-        error: error.message,
-      };
+      return { success: false, error: error.message };
     }
   }
 
@@ -190,7 +201,8 @@ export class EmailService {
     platformName?: string;
     supportEmail?: string;
   }) {
-    const supportEmail = params.supportEmail || this.env.TRIZEN_SUPPORT_EMAIL || 'support@trizenventures.com';
+    const env = this.getEnv();
+    const supportEmail = params.supportEmail || env.TRIZEN_SUPPORT_EMAIL || 'support@trizenventures.com';
     const platformName = params.platformName || 'TrizenHR';
 
     const supportNotificationResult = await this.sendEmail({
@@ -241,8 +253,9 @@ export class EmailService {
     name?: string;
     supportEmail?: string;
   }) {
+    const env = this.getEnv();
     const normalizedRole = this.normalizeRole(params.role);
-    const supportEmail = params.supportEmail || this.env.TRIZEN_SUPPORT_EMAIL || 'support@trizenventures.com';
+    const supportEmail = params.supportEmail || env.TRIZEN_SUPPORT_EMAIL || 'support@trizenventures.com';
     const platformName = params.platformName || 'TrizenHR';
     const roleLabel = this.getRoleLabel(normalizedRole);
 
