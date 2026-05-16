@@ -7,7 +7,7 @@ export interface PasswordResetTemplateData {
   platformName?: string;
 }
 
-import { EXTRAHAND_LOGO_SVG } from './logo';
+
 export const passwordResetTemplate: EmailTemplate = {
   name: 'password_reset',
   subject: (data: PasswordResetTemplateData) => {
