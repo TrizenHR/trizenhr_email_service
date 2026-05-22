@@ -75,6 +75,7 @@ export const trizenRoleInviteTemplate: EmailTemplate = {
 
   html: (data: TrizenRoleInviteTemplateData) => {
     const label = roleLabel(data.role);
+    const orgName = data.organizationName?.trim() || '';
     const expiryDate = new Date(data.expiresAt).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
@@ -83,6 +84,22 @@ export const trizenRoleInviteTemplate: EmailTemplate = {
     const capabilities = roleCapabilities(data.role)
       .map((item) => `<li style="margin:0 0 8px;">${item}</li>`)
       .join('');
+
+    const orgHeader = orgName
+      ? `
+              <div style="margin:0 0 24px;padding:16px 20px;background:#f1f5f9;border-radius:8px;border-left:4px solid #0f172a;">
+                <p style="margin:0 0 4px;font-size:12px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:#64748b;">Organization</p>
+                <p style="margin:0;font-size:22px;font-weight:700;color:#0f172a;line-height:1.3;">${orgName}</p>
+              </div>`
+      : '';
+
+    const inviteIntro = orgName
+      ? data.inviterName
+        ? `<strong>${data.inviterName}</strong> from <strong>${orgName}</strong> has invited you to join as <strong>${label}</strong>.`
+        : `<strong>${orgName}</strong> has invited you to join their workspace as <strong>${label}</strong>.`
+      : data.inviterName
+        ? `<strong>${data.inviterName}</strong> has invited you to join the workspace as <strong>${label}</strong>.`
+        : `You have been invited to join the workspace as <strong>${label}</strong>.`;
 
     return `
 <!DOCTYPE html>
@@ -99,12 +116,13 @@ export const trizenRoleInviteTemplate: EmailTemplate = {
         <table role="presentation" width="620" cellspacing="0" cellpadding="0" style="max-width:620px;background:#ffffff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;">
           <tr>
             <td style="padding:32px 32px 24px;">
+              ${orgHeader}
               <h2 style="margin:0 0 16px;font-size:24px;color:#0f172a;font-weight:700;">You're invited as ${label}</h2>
               <p style="margin:0 0 16px;font-size:16px;line-height:24px;color:#334155;">
                 Hello ${data.name || 'there'},
               </p>
               <p style="margin:0 0 16px;font-size:16px;line-height:24px;color:#334155;">
-                ${data.organizationName || 'Our organization'} has invited you to join their workspace as <strong>${label}</strong>.
+                ${inviteIntro}
               </p>
               
               <p style="margin:24px 0 12px;font-size:15px;font-weight:600;color:#0f172a;">What you can do:</p>
@@ -144,6 +162,7 @@ export const trizenRoleInviteTemplate: EmailTemplate = {
 
   text: (data: TrizenRoleInviteTemplateData) => {
     const label = roleLabel(data.role);
+    const orgName = data.organizationName?.trim() || '';
     const expiryDate = new Date(data.expiresAt).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
@@ -151,12 +170,20 @@ export const trizenRoleInviteTemplate: EmailTemplate = {
     });
     const capabilities = roleCapabilities(data.role).map((item) => `- ${item}`).join('\n');
 
+    const inviteIntro = orgName
+      ? data.inviterName
+        ? `${data.inviterName} from ${orgName} has invited you to join as ${label}.`
+        : `${orgName} has invited you to join their workspace as ${label}.`
+      : data.inviterName
+        ? `${data.inviterName} has invited you to join the workspace as ${label}.`
+        : `You have been invited to join the workspace as ${label}.`;
+
     return `
-You're invited as ${label}
+${orgName ? `Organization: ${orgName}\n\n` : ''}You're invited as ${label}
 
 Hello ${data.name || 'there'},
 
-${data.organizationName || 'The organization'} has invited you to join their workspace as ${label}.
+${inviteIntro}
 
 What you can do:
 ${capabilities}

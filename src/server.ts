@@ -2,6 +2,7 @@ import { createApp } from './app';
 import { connectMongo } from './config/database';
 import { validateEnv } from './config/env';
 import logger from './config/logger';
+import { SMTPProvider } from './services/providers/SMTPProvider';
 
 const env = validateEnv();
 
@@ -9,6 +10,14 @@ async function startServer() {
   try {
     // Connect to MongoDB
     await connectMongo(env.MONGODB_URI, env.MONGODB_DB);
+
+    let smtpVerified = { primary: false, org: false };
+
+    if (env.EMAIL_PROVIDER === 'smtp') {
+      logger.info('Verifying SMTP connections at startup...');
+      const smtp = new SMTPProvider();
+      smtpVerified = await smtp.verify();
+    }
 
     // Create Express app
     const app = createApp();
@@ -19,7 +28,21 @@ async function startServer() {
       logger.info(`🚀 Email Service running on port ${port}`);
       logger.info(`📝 Environment: ${env.NODE_ENV}`);
       logger.info(`📧 Email Provider: ${env.EMAIL_PROVIDER}`);
-      logger.info(`📨 From: ${env.EMAIL_FROM_ADDRESS}`);
+      logger.info(`📨 Platform From: ${env.EMAIL_FROM_ADDRESS}`);
+      logger.info(
+        `📨 Org staff From: ${env.EMAIL_FROM_ADDRESS_ORG || '(not set)'} (HR/manager/employee invites)`
+      );
+      logger.info(
+        `📬 Platform SMTP authenticated: ${smtpVerified.primary ? 'YES' : 'NO'}`
+      );
+      logger.info(
+        `📬 Org SMTP authenticated: ${smtpVerified.org ? 'YES' : 'NO'} (employee/HR/manager invites)`
+      );
+      if (!smtpVerified.org && env.SMTP_USER_ORG) {
+        logger.error(
+          '⚠️  Fix SMTP_PASS_ORG in .env — Microsoft rejected login for support@trizenventures.com'
+        );
+      }
       logger.info(`🔗 Health check: http://localhost:${port}/api/v1/health`);
     });
 

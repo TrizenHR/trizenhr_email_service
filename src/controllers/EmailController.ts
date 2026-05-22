@@ -79,7 +79,25 @@ export class EmailController {
       supportEmail,
     } = req.body;
 
+    logger.info('[EmailService] POST /role-invitation received', {
+      email,
+      role,
+      organizationName: organizationName || '(not provided)',
+      inviterName,
+      inviteLinkPreview: typeof inviteLink === 'string' ? inviteLink.slice(0, 80) : undefined,
+      serviceName: req.headers['x-service-name'],
+    });
+
+    const staffRoles = ['hr_admin', 'manager', 'employee'];
+    if (staffRoles.includes(String(role).toLowerCase()) && !organizationName?.trim()) {
+      logger.warn('[EmailService] Staff invite missing organizationName — email will show generic org copy', {
+        email,
+        role,
+      });
+    }
+
     if (!email || !role || !inviteLink || !expiresAt) {
+      logger.warn('[EmailService] role-invitation validation failed: missing fields');
       return res.status(400).json({
         success: false,
         error: 'email, role, inviteLink, and expiresAt are required'
@@ -94,12 +112,7 @@ export class EmailController {
       });
     }
 
-    res.json({
-      success: true,
-      message: 'Role invitation email queued for sending'
-    });
-
-    EmailService.sendTrizenRoleInvitationEmail({
+    const result = await EmailService.sendTrizenRoleInvitationEmail({
       email,
       role,
       inviteLink,
@@ -109,15 +122,31 @@ export class EmailController {
       platformName,
       name,
       supportEmail,
-    }).catch((error: any) => {
-      logger.error('Background role invitation email send failed', {
-        email,
-        role,
-        error: error.message
-      });
     });
 
-    return;
+    if (!result.success) {
+      logger.error('[EmailService] role-invitation SMTP failed', {
+        email,
+        role,
+        error: result.error,
+      });
+      return res.status(500).json({
+        success: false,
+        error: result.error || 'Failed to send invitation email',
+      });
+    }
+
+    logger.info('[EmailService] role-invitation sent successfully', {
+      email,
+      role,
+      messageId: result.messageId,
+    });
+
+    return res.json({
+      success: true,
+      message: 'Role invitation email sent',
+      messageId: result.messageId,
+    });
   });
 
   /**

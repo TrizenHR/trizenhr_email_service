@@ -52,6 +52,8 @@ export class EmailService {
         logger.info('Rendering email template', {
           template: options.template,
           platformName: data.platformName,
+          organizationName: data.organizationName,
+          role: data.role,
         });
 
         if (template && typeof template.subject === 'function') {
@@ -96,25 +98,34 @@ export class EmailService {
       }
 
       // ── Sender routing ────────────────────────────────────────────────────
-      // HR / Manager / Employee invitations  → support@trizenventures.com
-      // Company Admin invitation + everything else → support@trizenhr.com
-      const isOrgRoleInvite =
+      // HR / Manager / Employee invitations  → support@trizenventures.com (org SMTP)
+      // Company Admin / platform onboarding  → support@trizenhr.com
+      const isOrgStaffInvite =
         options.metadata?.type === 'trizen_role_invite' &&
         options.metadata?.role !== 'company_admin';
 
-      const fromAddress = isOrgRoleInvite && env.EMAIL_FROM_ADDRESS_ORG
-        ? env.EMAIL_FROM_ADDRESS_ORG
-        : env.EMAIL_FROM_ADDRESS;
+      let fromAddress = env.EMAIL_FROM_ADDRESS;
+      let fromName = env.EMAIL_FROM_NAME;
+      let replyTo = env.EMAIL_REPLY_TO || env.EMAIL_FROM_ADDRESS;
 
-      const fromName = isOrgRoleInvite && env.EMAIL_FROM_NAME_ORG
-        ? env.EMAIL_FROM_NAME_ORG
-        : env.EMAIL_FROM_NAME;
+      if (isOrgStaffInvite) {
+        if (!env.EMAIL_FROM_ADDRESS_ORG || !env.SMTP_USER_ORG || !env.SMTP_PASS_ORG) {
+          throw new Error(
+            'Organisation email sender is not configured (EMAIL_FROM_ADDRESS_ORG, SMTP_USER_ORG, SMTP_PASS_ORG). ' +
+              'HR/Manager/Employee invites must be sent from support@trizenventures.com.'
+          );
+        }
+        fromAddress = env.EMAIL_FROM_ADDRESS_ORG;
+        fromName = env.EMAIL_FROM_NAME_ORG || 'TrizenVentures';
+        replyTo = env.EMAIL_FROM_ADDRESS_ORG;
+      }
 
       logger.info('Sender routing decision', {
         type: options.metadata?.type,
         role: options.metadata?.role,
-        isOrgRoleInvite,
+        isOrgStaffInvite,
         fromAddress,
+        to: options.to,
       });
 
       const provider = this.getProvider();
@@ -122,7 +133,7 @@ export class EmailService {
       const result = await provider.send({
         to: options.to,
         from: { email: fromAddress, name: fromName },
-        replyTo: env.EMAIL_REPLY_TO,
+        replyTo,
         subject: subject || 'Notification',
         html: html || '',
         text: text || TemplateService.stripHtml(html || ''),
@@ -255,16 +266,31 @@ export class EmailService {
   }) {
     const env = this.getEnv();
     const normalizedRole = this.normalizeRole(params.role);
-    const supportEmail = params.supportEmail || env.TRIZEN_SUPPORT_EMAIL || 'support@trizenventures.com';
     const platformName = params.platformName || 'TrizenHR';
     const roleLabel = this.getRoleLabel(normalizedRole);
 
-    const bcc = normalizedRole === 'company_admin' ? supportEmail : undefined;
-
-    return this.sendEmail({
+    logger.info('[EmailService] sendTrizenRoleInvitationEmail', {
       to: params.email,
-      bcc,
-      subject: `${platformName} Invitation - ${roleLabel}`,
+      role: normalizedRole,
+      organizationName: params.organizationName,
+      expectedFrom:
+        normalizedRole === 'company_admin'
+          ? env.EMAIL_FROM_ADDRESS
+          : env.EMAIL_FROM_ADDRESS_ORG || '(org sender not configured)',
+    });
+
+    // Platform onboarding copy goes to TrizenHR mailbox, not the org support inbox
+    const platformSupportBcc =
+      normalizedRole === 'company_admin' ? env.EMAIL_FROM_ADDRESS : undefined;
+
+    const emailSubject = params.organizationName
+      ? `${params.organizationName} — You're invited as ${roleLabel}`
+      : `${platformName} Invitation — ${roleLabel}`;
+
+    const result = await this.sendEmail({
+      to: params.email,
+      bcc: platformSupportBcc,
+      subject: emailSubject,
       template: 'trizen_role_invite',
       data: {
         role: normalizedRole,
@@ -281,6 +307,16 @@ export class EmailService {
         organizationName: params.organizationName,
       },
     });
+
+    if (result.success) {
+      logger.info('[EmailService] Invitation delivered via SMTP', {
+        to: params.email,
+        role: normalizedRole,
+        messageId: result.messageId,
+      });
+    }
+
+    return result;
   }
 
   static async sendPasswordResetEmail(

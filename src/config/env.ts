@@ -18,7 +18,7 @@ const envSchema = z.object({
   
   // Service Authentication
   SERVICE_AUTH_TOKEN: z.string().min(32, 'SERVICE_AUTH_TOKEN must be at least 32 characters'),
-  
+    
   // Email Provider
   EMAIL_PROVIDER: z.enum(['smtp', 'sendgrid', 'ses']).default('smtp'),
   
