@@ -19,6 +19,7 @@ export class EmailController {
       createdByEmail,
       platformName,
       supportEmail,
+      platformSupportEmail,
     } = req.body;
 
     if (!organizationName || !companyAdminEmail || !companyAdminInviteLink || !inviteExpiresAt) {
@@ -51,6 +52,7 @@ export class EmailController {
       createdByEmail,
       platformName,
       supportEmail,
+      platformSupportEmail: platformSupportEmail || supportEmail,
     }).catch((error: any) => {
       logger.error('Background organization-created email flow failed', {
         organizationName,

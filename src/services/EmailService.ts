@@ -99,16 +99,20 @@ export class EmailService {
 
       // ── Sender routing ────────────────────────────────────────────────────
       // HR / Manager / Employee invitations  → support@trizenventures.com (org SMTP)
-      // Company Admin / platform onboarding  → support@trizenhr.com
-      const isOrgStaffInvite =
+      // Company Admin / org onboarding / platform notifications → support@trizenhr.com
+      const normalizedRole = options.metadata?.role
+        ? this.normalizeRole(String(options.metadata.role))
+        : '';
+      const orgStaffRoles = new Set(['hr_admin', 'manager', 'employee']);
+      const useOrgSender =
         options.metadata?.type === 'trizen_role_invite' &&
-        options.metadata?.role !== 'company_admin';
+        orgStaffRoles.has(normalizedRole);
 
       let fromAddress = env.EMAIL_FROM_ADDRESS;
       let fromName = env.EMAIL_FROM_NAME;
       let replyTo = env.EMAIL_REPLY_TO || env.EMAIL_FROM_ADDRESS;
 
-      if (isOrgStaffInvite) {
+      if (useOrgSender) {
         if (!env.EMAIL_FROM_ADDRESS_ORG || !env.SMTP_USER_ORG || !env.SMTP_PASS_ORG) {
           throw new Error(
             'Organisation email sender is not configured (EMAIL_FROM_ADDRESS_ORG, SMTP_USER_ORG, SMTP_PASS_ORG). ' +
@@ -122,8 +126,8 @@ export class EmailService {
 
       logger.info('Sender routing decision', {
         type: options.metadata?.type,
-        role: options.metadata?.role,
-        isOrgStaffInvite,
+        role: normalizedRole || options.metadata?.role,
+        useOrgSender,
         fromAddress,
         to: options.to,
       });
@@ -211,13 +215,16 @@ export class EmailService {
     createdByEmail?: string;
     platformName?: string;
     supportEmail?: string;
+    platformSupportEmail?: string;
   }) {
     const env = this.getEnv();
-    const supportEmail = params.supportEmail || env.TRIZEN_SUPPORT_EMAIL || 'support@trizenventures.com';
     const platformName = params.platformName || 'TrizenHR';
+    // Internal copy goes to platform inbox (trizenhr.com), not org staff mailbox
+    const platformNotifyInbox =
+      params.platformSupportEmail || env.EMAIL_FROM_ADDRESS;
 
     const supportNotificationResult = await this.sendEmail({
-      to: supportEmail,
+      to: platformNotifyInbox,
       subject: `${platformName} Organization Created: ${params.organizationName}`,
       template: 'organization_created_support',
       data: {
@@ -244,7 +251,6 @@ export class EmailService {
       inviterName: params.createdByName || 'System Admin',
       platformName,
       name: params.companyAdminName,
-      supportEmail,
     });
 
     return {

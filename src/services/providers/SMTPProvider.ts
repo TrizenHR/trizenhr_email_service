@@ -133,11 +133,20 @@ export class SMTPProvider {
       };
     }
 
-    // Primary sender (support@trizenhr.com)
-    const primaryAddress = this.isMicrosoft ? env.SMTP_USER : fromEmail;
+    // Platform sender — must use trizenhr mailbox (EMAIL_FROM_ADDRESS / SMTP_USER)
+    const platformAddress = env.EMAIL_FROM_ADDRESS;
+    if (
+      this.isMicrosoft &&
+      env.SMTP_USER.toLowerCase() !== platformAddress.toLowerCase()
+    ) {
+      logger.warn(
+        'SMTP_USER does not match EMAIL_FROM_ADDRESS — Microsoft may send from the SMTP_USER mailbox',
+        { smtpUser: env.SMTP_USER, emailFromAddress: platformAddress, requestedFrom: fromEmail }
+      );
+    }
     return {
       transport: this.transporter,
-      senderAddress: primaryAddress,
+      senderAddress: platformAddress,
       senderName: env.EMAIL_FROM_NAME,
     };
   }
