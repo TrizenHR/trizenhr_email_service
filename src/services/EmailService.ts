@@ -188,8 +188,31 @@ export class EmailService {
     });
   }
 
+  /** Normalize invite role slugs for templates and sender routing. */
   private static normalizeRole(role: string): string {
-    return (role || '').trim().toLowerCase().replace(/\s+/g, '_');
+    const normalized = (role || '').trim().toLowerCase().replace(/\s+/g, '_');
+
+    if (
+      normalized === 'admin' ||
+      normalized === 'company_admin' ||
+      normalized === 'companyadmin'
+    ) {
+      return 'company_admin';
+    }
+    if (normalized === 'hr' || normalized === 'hr_admin') {
+      return 'hr_admin';
+    }
+    if (normalized === 'supervisor' || normalized === 'manager') {
+      return 'manager';
+    }
+    if (normalized === 'employee') {
+      return 'employee';
+    }
+    if (normalized === 'super_admin' || normalized === 'superadmin') {
+      return 'company_admin';
+    }
+
+    return normalized;
   }
 
   private static getRoleLabel(role: string): string {
@@ -216,12 +239,21 @@ export class EmailService {
     platformName?: string;
     supportEmail?: string;
     platformSupportEmail?: string;
+    companyAdminRole?: string;
   }) {
     const env = this.getEnv();
     const platformName = params.platformName || 'TrizenHR';
+    const companyAdminRole = this.normalizeRole(
+      params.companyAdminRole || 'company_admin'
+    );
     // Internal copy goes to platform inbox (trizenhr.com), not org staff mailbox
     const platformNotifyInbox =
       params.platformSupportEmail || env.EMAIL_FROM_ADDRESS;
+
+    logger.info('[EmailService] organization-created invite', {
+      companyAdminEmail: params.companyAdminEmail,
+      companyAdminRole,
+    });
 
     const supportNotificationResult = await this.sendEmail({
       to: platformNotifyInbox,
@@ -244,7 +276,7 @@ export class EmailService {
 
     const companyAdminInviteResult = await this.sendTrizenRoleInvitationEmail({
       email: params.companyAdminEmail,
-      role: 'company_admin',
+      role: companyAdminRole,
       inviteLink: params.companyAdminInviteLink,
       expiresAt: params.inviteExpiresAt,
       organizationName: params.organizationName,

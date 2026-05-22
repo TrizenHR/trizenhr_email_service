@@ -12,8 +12,11 @@ export interface TrizenRoleInviteTemplateData {
 
 const ROLE_LABEL_MAP: Record<string, string> = {
   company_admin: 'Company Admin',
+  admin: 'Company Admin',
   hr_admin: 'HR Admin',
+  hr: 'HR Admin',
   manager: 'Manager',
+  supervisor: 'Manager',
   employee: 'Employee',
 };
 
@@ -29,7 +32,7 @@ function roleLabel(role: string): string {
 function roleCapabilities(role: string): string[] {
   const normalized = normalizeRole(role);
 
-  if (normalized === 'company_admin') {
+  if (normalized === 'company_admin' || normalized === 'admin') {
     return [
       'Create your password securely from the invitation link.',
       'Invite and manage HR Admin users.',
