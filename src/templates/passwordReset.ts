@@ -7,7 +7,7 @@ export interface PasswordResetTemplateData {
   platformName?: string;
 }
 
-import { EXTRAHAND_LOGO_SVG } from './logo';
+
 export const passwordResetTemplate: EmailTemplate = {
   name: 'password_reset',
   subject: (data: PasswordResetTemplateData) => {
@@ -39,7 +39,6 @@ export const passwordResetTemplate: EmailTemplate = {
           <tr>
           <tr>
             <td style="padding:32px 32px 20px;text-align:center;border-bottom:1px solid #e5e7eb;">
-              <div style="margin-bottom:16px;">${EXTRAHAND_LOGO_SVG}</div>
               <h1 style="margin:0;font-size:24px;font-weight:700;color:#111827;">Password reset request</h1>
               <p style="margin:8px 0 0;font-size:14px;color:#6b7280;">Secure link to update your credentials</p>
             </td>
@@ -84,7 +83,7 @@ export const passwordResetTemplate: EmailTemplate = {
               <p style="margin:0 0 8px;color:#6b7280;font-size:13px;line-height:1.6;">
                 If you have questions, please contact our support team.
               </p>
-              <p style="margin:0;color:#9ca3af;font-size:12px;">© ${new Date().getFullYear()} ExtraHand. All rights reserved.</p>
+              <p style="margin:0;color:#9ca3af;font-size:12px;">© ${new Date().getFullYear()} TrizenHR. All rights reserved.</p>
             </td>
           </tr>
         </table>
@@ -107,7 +106,7 @@ ${data.expiresAt ? `Important: This link will expire on ${data.expiresAt}.` : ''
 
 If you have any questions, please contact our support team.
 
-© ${new Date().getFullYear()} ExtraHand. All rights reserved.
+© ${new Date().getFullYear()} TrizenHR. All rights reserved.
 This is an automated email from ${platformName}. Please do not reply to this message.
   `;
   },

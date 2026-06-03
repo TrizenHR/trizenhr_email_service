@@ -10,11 +10,16 @@ import { fetchLogoAsBuffer } from '../utils/logoUtils';
 
 export class EmailService {
   private static provider: any;
-  private static env = validateEnv();
+
+  /** Always read env fresh so new CapRover vars are picked up after restart. */
+  private static getEnv() {
+    return validateEnv();
+  }
 
   private static getProvider() {
     if (!this.provider) {
-      switch (this.env.EMAIL_PROVIDER) {
+      const env = this.getEnv();
+      switch (env.EMAIL_PROVIDER) {
         case 'sendgrid':
           this.provider = new SendGridProvider();
           break;
@@ -22,16 +27,17 @@ export class EmailService {
           this.provider = new SESProvider();
           break;
         case 'smtp':
+        default:
           this.provider = new SMTPProvider();
           break;
-        default:
-          throw new Error(`Unknown email provider: ${this.env.EMAIL_PROVIDER}`);
       }
     }
     return this.provider;
   }
 
   static async sendEmail(options: EmailOptions): Promise<EmailResult> {
+    // Read env fresh on every call — ensures CapRover env updates are picked up
+    const env = this.getEnv();
     try {
       let html = options.html;
       let text = options.text;
@@ -46,9 +52,10 @@ export class EmailService {
         logger.info('Rendering email template', {
           template: options.template,
           platformName: data.platformName,
+          organizationName: data.organizationName,
+          role: data.role,
         });
 
-        // Handle dynamic subject from template
         if (template && typeof template.subject === 'function') {
           subject = template.subject(data);
         } else if (template && typeof template.subject === 'string') {
@@ -61,16 +68,14 @@ export class EmailService {
         html = rendered.html;
         text = rendered.text;
 
-        // Attachment logic (logo)
         const needsCidLogo = typeof html === 'string' && html.includes('cid:logo');
         const hasCidLogo = Array.isArray(options.attachments)
           && options.attachments.some((attachment: any) => attachment?.cid === 'logo');
 
         if (needsCidLogo && !hasCidLogo) {
           try {
-            const logoUrl = this.env.LOGO_URL || 'https://i.ibb.co/Zt9jNcs/logo.png';
+            const logoUrl = env.LOGO_URL || 'https://i.ibb.co/Zt9jNcs/logo.png';
             const logoBuffer = await fetchLogoAsBuffer(logoUrl);
-
             if (logoBuffer) {
               const logoAttachment = {
                 filename: 'logo.png',
@@ -78,7 +83,6 @@ export class EmailService {
                 contentType: 'image/png',
                 cid: 'logo',
               };
-
               options.attachments = Array.isArray(options.attachments)
                 ? [...options.attachments, logoAttachment]
                 : [logoAttachment];
@@ -89,22 +93,51 @@ export class EmailService {
         }
       }
 
-      // Validate
       if (!html && !text) {
         throw new Error('Either html, text, or template must be provided');
       }
 
-      // Get provider
+      // ── Sender routing ────────────────────────────────────────────────────
+      // HR / Manager / Employee invitations  → support@trizenventures.com (org SMTP)
+      // Company Admin / org onboarding / platform notifications → support@trizenhr.com
+      const normalizedRole = options.metadata?.role
+        ? this.normalizeRole(String(options.metadata.role))
+        : '';
+      const orgStaffRoles = new Set(['hr_admin', 'manager', 'employee']);
+      const useOrgSender =
+        options.metadata?.type === 'trizen_role_invite' &&
+        orgStaffRoles.has(normalizedRole);
+
+      let fromAddress = env.EMAIL_FROM_ADDRESS;
+      let fromName = env.EMAIL_FROM_NAME;
+      let replyTo = env.EMAIL_REPLY_TO || env.EMAIL_FROM_ADDRESS;
+
+      if (useOrgSender) {
+        if (!env.EMAIL_FROM_ADDRESS_ORG || !env.SMTP_USER_ORG || !env.SMTP_PASS_ORG) {
+          throw new Error(
+            'Organisation email sender is not configured (EMAIL_FROM_ADDRESS_ORG, SMTP_USER_ORG, SMTP_PASS_ORG). ' +
+              'HR/Manager/Employee invites must be sent from support@trizenventures.com.'
+          );
+        }
+        fromAddress = env.EMAIL_FROM_ADDRESS_ORG;
+        fromName = env.EMAIL_FROM_NAME_ORG || 'TrizenVentures';
+        replyTo = env.EMAIL_FROM_ADDRESS_ORG;
+      }
+
+      logger.info('Sender routing decision', {
+        type: options.metadata?.type,
+        role: normalizedRole || options.metadata?.role,
+        useOrgSender,
+        fromAddress,
+        to: options.to,
+      });
+
       const provider = this.getProvider();
 
-      // Send email
       const result = await provider.send({
         to: options.to,
-        from: {
-          email: this.env.EMAIL_FROM_ADDRESS,
-          name: this.env.EMAIL_FROM_NAME,
-        },
-        replyTo: this.env.EMAIL_REPLY_TO,
+        from: { email: fromAddress, name: fromName },
+        replyTo,
         subject: subject || 'Notification',
         html: html || '',
         text: text || TemplateService.stripHtml(html || ''),
@@ -113,21 +146,17 @@ export class EmailService {
         attachments: options.attachments,
       });
 
-      // Log email (non-blocking)
       this.logEmail({
         to: Array.isArray(options.to) ? options.to : [options.to],
         subject: subject,
         template: options.template,
         status: 'sent',
         messageId: result.messageId,
-        provider: this.env.EMAIL_PROVIDER,
+        provider: env.EMAIL_PROVIDER,
         metadata: options.metadata,
       });
 
-      return {
-        success: true,
-        messageId: result.messageId,
-      };
+      return { success: true, messageId: result.messageId };
     } catch (error: any) {
       logger.error('Email send failed', {
         to: options.to,
@@ -142,14 +171,11 @@ export class EmailService {
         template: options.template,
         status: 'failed',
         error: error.message,
-        provider: this.env.EMAIL_PROVIDER,
+        provider: env.EMAIL_PROVIDER,
         metadata: options.metadata,
       });
 
-      return {
-        success: false,
-        error: error.message,
-      };
+      return { success: false, error: error.message };
     }
   }
 
@@ -162,8 +188,31 @@ export class EmailService {
     });
   }
 
+  /** Normalize invite role slugs for templates and sender routing. */
   private static normalizeRole(role: string): string {
-    return (role || '').trim().toLowerCase().replace(/\s+/g, '_');
+    const normalized = (role || '').trim().toLowerCase().replace(/\s+/g, '_');
+
+    if (
+      normalized === 'admin' ||
+      normalized === 'company_admin' ||
+      normalized === 'companyadmin'
+    ) {
+      return 'company_admin';
+    }
+    if (normalized === 'hr' || normalized === 'hr_admin') {
+      return 'hr_admin';
+    }
+    if (normalized === 'supervisor' || normalized === 'manager') {
+      return 'manager';
+    }
+    if (normalized === 'employee') {
+      return 'employee';
+    }
+    if (normalized === 'super_admin' || normalized === 'superadmin') {
+      return 'company_admin';
+    }
+
+    return normalized;
   }
 
   private static getRoleLabel(role: string): string {
@@ -189,12 +238,25 @@ export class EmailService {
     createdByEmail?: string;
     platformName?: string;
     supportEmail?: string;
+    platformSupportEmail?: string;
+    companyAdminRole?: string;
   }) {
-    const supportEmail = params.supportEmail || this.env.TRIZEN_SUPPORT_EMAIL || 'support@trizenventures.com';
+    const env = this.getEnv();
     const platformName = params.platformName || 'TrizenHR';
+    const companyAdminRole = this.normalizeRole(
+      params.companyAdminRole || 'company_admin'
+    );
+    // Internal copy goes to platform inbox (trizenhr.com), not org staff mailbox
+    const platformNotifyInbox =
+      params.platformSupportEmail || env.EMAIL_FROM_ADDRESS;
+
+    logger.info('[EmailService] organization-created invite', {
+      companyAdminEmail: params.companyAdminEmail,
+      companyAdminRole,
+    });
 
     const supportNotificationResult = await this.sendEmail({
-      to: supportEmail,
+      to: platformNotifyInbox,
       subject: `${platformName} Organization Created: ${params.organizationName}`,
       template: 'organization_created_support',
       data: {
@@ -214,14 +276,13 @@ export class EmailService {
 
     const companyAdminInviteResult = await this.sendTrizenRoleInvitationEmail({
       email: params.companyAdminEmail,
-      role: 'company_admin',
+      role: companyAdminRole,
       inviteLink: params.companyAdminInviteLink,
       expiresAt: params.inviteExpiresAt,
       organizationName: params.organizationName,
       inviterName: params.createdByName || 'System Admin',
       platformName,
       name: params.companyAdminName,
-      supportEmail,
     });
 
     return {
@@ -241,17 +302,33 @@ export class EmailService {
     name?: string;
     supportEmail?: string;
   }) {
+    const env = this.getEnv();
     const normalizedRole = this.normalizeRole(params.role);
-    const supportEmail = params.supportEmail || this.env.TRIZEN_SUPPORT_EMAIL || 'support@trizenventures.com';
     const platformName = params.platformName || 'TrizenHR';
     const roleLabel = this.getRoleLabel(normalizedRole);
 
-    const bcc = normalizedRole === 'company_admin' ? supportEmail : undefined;
-
-    return this.sendEmail({
+    logger.info('[EmailService] sendTrizenRoleInvitationEmail', {
       to: params.email,
-      bcc,
-      subject: `${platformName} Invitation - ${roleLabel}`,
+      role: normalizedRole,
+      organizationName: params.organizationName,
+      expectedFrom:
+        normalizedRole === 'company_admin'
+          ? env.EMAIL_FROM_ADDRESS
+          : env.EMAIL_FROM_ADDRESS_ORG || '(org sender not configured)',
+    });
+
+    // Platform onboarding copy goes to TrizenHR mailbox, not the org support inbox
+    const platformSupportBcc =
+      normalizedRole === 'company_admin' ? env.EMAIL_FROM_ADDRESS : undefined;
+
+    const emailSubject = params.organizationName
+      ? `${params.organizationName} — You're invited as ${roleLabel}`
+      : `${platformName} Invitation — ${roleLabel}`;
+
+    const result = await this.sendEmail({
+      to: params.email,
+      bcc: platformSupportBcc,
+      subject: emailSubject,
       template: 'trizen_role_invite',
       data: {
         role: normalizedRole,
@@ -268,6 +345,16 @@ export class EmailService {
         organizationName: params.organizationName,
       },
     });
+
+    if (result.success) {
+      logger.info('[EmailService] Invitation delivered via SMTP', {
+        to: params.email,
+        role: normalizedRole,
+        messageId: result.messageId,
+      });
+    }
+
+    return result;
   }
 
   static async sendPasswordResetEmail(
