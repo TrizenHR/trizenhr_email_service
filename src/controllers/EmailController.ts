@@ -154,6 +154,73 @@ export class EmailController {
   });
 
   /**
+   * Send demo invitation email for TrizenHR sales demos.
+   * POST /api/v1/email/demo-invitation
+   */
+  static sendDemoInvitationEmail = asyncHandler(async (req: Request, res: Response) => {
+    const {
+      email,
+      role,
+      inviteLink,
+      inviteExpiresAt,
+      demoAccessTtlDays,
+      companyName,
+      inviterName,
+      platformName,
+      name,
+    } = req.body;
+
+    if (!email || !role || !inviteLink || !inviteExpiresAt || !companyName) {
+      return res.status(400).json({
+        success: false,
+        error:
+          'email, role, inviteLink, inviteExpiresAt, and companyName are required',
+      });
+    }
+
+    const inviteExpiryDate = new Date(inviteExpiresAt);
+    if (Number.isNaN(inviteExpiryDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        error: 'inviteExpiresAt must be a valid date',
+      });
+    }
+
+    const ttlDays = Number(demoAccessTtlDays);
+    if (!Number.isFinite(ttlDays) || ttlDays < 1) {
+      return res.status(400).json({
+        success: false,
+        error: 'demoAccessTtlDays must be a positive number',
+      });
+    }
+
+    const result = await EmailService.sendTrizenDemoInvitationEmail({
+      email,
+      role,
+      inviteLink,
+      inviteExpiresAt: inviteExpiryDate,
+      demoAccessTtlDays: ttlDays,
+      companyName,
+      inviterName,
+      platformName,
+      name,
+    });
+
+    if (!result.success) {
+      return res.status(500).json({
+        success: false,
+        error: result.error || 'Failed to send demo invitation email',
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Demo invitation email sent',
+      messageId: result.messageId,
+    });
+  });
+
+  /**
    * Send password reset email
    * POST /api/v1/email/password-reset
    */

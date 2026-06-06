@@ -29,11 +29,17 @@ async function startServer() {
       logger.info(`📝 Environment: ${env.NODE_ENV}`);
       logger.info(`📧 Email Provider: ${env.EMAIL_PROVIDER}`);
       logger.info(`📨 Platform From: ${env.EMAIL_FROM_ADDRESS}`);
+      if (env.SMTP_PLATFORM_USE_ORG && env.EMAIL_FROM_ADDRESS_ORG) {
+        logger.info(
+          `📨 Platform routing (temporary): ${env.EMAIL_FROM_ADDRESS_ORG} via org SMTP`
+        );
+      }
       logger.info(
         `📨 Org staff From: ${env.EMAIL_FROM_ADDRESS_ORG || '(not set)'} (HR/manager/employee invites)`
       );
+      const platformOk = env.SMTP_PLATFORM_USE_ORG ? smtpVerified.org : smtpVerified.primary;
       logger.info(
-        `📬 Platform SMTP authenticated: ${smtpVerified.primary ? 'YES' : 'NO'}`
+        `📬 Platform SMTP authenticated: ${platformOk ? 'YES' : 'NO'}`
       );
       logger.info(
         `📬 Org SMTP authenticated: ${smtpVerified.org ? 'YES' : 'NO'} (employee/HR/manager invites)`

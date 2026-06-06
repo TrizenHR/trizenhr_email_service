@@ -104,9 +104,14 @@ export class EmailService {
         ? this.normalizeRole(String(options.metadata.role))
         : '';
       const orgStaffRoles = new Set(['hr_admin', 'manager', 'employee']);
-      const useOrgSender =
-        options.metadata?.type === 'trizen_role_invite' &&
-        orgStaffRoles.has(normalizedRole);
+      let useOrgSender =
+        options.metadata?.type === 'trizen_demo_invite' ||
+        (options.metadata?.type === 'trizen_role_invite' &&
+          orgStaffRoles.has(normalizedRole));
+
+      if (env.SMTP_PLATFORM_USE_ORG) {
+        useOrgSender = true;
+      }
 
       let fromAddress = env.EMAIL_FROM_ADDRESS;
       let fromName = env.EMAIL_FROM_NAME;
@@ -355,6 +360,52 @@ export class EmailService {
     }
 
     return result;
+  }
+
+  static async sendTrizenDemoInvitationEmail(params: {
+    email: string;
+    role: string;
+    inviteLink: string;
+    inviteExpiresAt: Date;
+    demoAccessTtlDays: number;
+    companyName: string;
+    inviterName?: string;
+    platformName?: string;
+    name?: string;
+  }) {
+    const env = this.getEnv();
+    const normalizedRole = this.normalizeRole(params.role);
+    const platformName = params.platformName || 'TrizenHR Demo';
+    const roleLabel = this.getRoleLabel(normalizedRole);
+
+    logger.info('[EmailService] sendTrizenDemoInvitationEmail', {
+      to: params.email,
+      role: normalizedRole,
+      companyName: params.companyName,
+    });
+
+    const emailSubject = `${params.companyName} — Try Trizen HR (${roleLabel} demo)`;
+
+    return this.sendEmail({
+      to: params.email,
+      subject: emailSubject,
+      template: 'trizen_demo_invite',
+      data: {
+        role: normalizedRole,
+        inviteLink: params.inviteLink,
+        inviteExpiresAt: params.inviteExpiresAt,
+        demoAccessTtlDays: params.demoAccessTtlDays,
+        companyName: params.companyName,
+        platformName,
+        name: params.name,
+        inviterName: params.inviterName,
+      },
+      metadata: {
+        type: 'trizen_demo_invite',
+        role: normalizedRole,
+        companyName: params.companyName,
+      },
+    });
   }
 
   static async sendPasswordResetEmail(

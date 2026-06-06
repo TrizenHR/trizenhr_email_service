@@ -11,32 +11,32 @@ function loadEnv() {
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.string().transform(Number).refine(n => n > 0 && n < 65536, 'Port must be between 1-65535').default('4007'),
-  
+
   // MongoDB
   MONGODB_URI: z.string().url('Invalid MongoDB URI'),
   MONGODB_DB: z.string().default('extrahand'),
-  
+
   // Service Authentication
   SERVICE_AUTH_TOKEN: z.string().min(32, 'SERVICE_AUTH_TOKEN must be at least 32 characters'),
-    
+
   // Email Provider
   EMAIL_PROVIDER: z.enum(['smtp', 'sendgrid', 'ses']).default('smtp'),
-  
+
   // SMTP Configuration (Microsoft/Outlook optimized)
   SMTP_HOST: z.string().default('smtp.office365.com'),
   SMTP_PORT: z.string().transform(Number).default('587'),
   SMTP_SECURE: z.string().transform(val => val === 'true').default('false'),
   SMTP_USER: z.string().email('Invalid SMTP user email'),
   SMTP_PASS: z.string().min(1, 'SMTP password is required'),
-  
+
   // SendGrid (optional)
   SENDGRID_API_KEY: z.string().optional(),
-  
+
   // AWS SES (optional)
   AWS_REGION: z.string().default('us-east-1'),
   AWS_ACCESS_KEY_ID: z.string().optional(),
   AWS_SECRET_ACCESS_KEY: z.string().optional(),
-  
+
   // Email Settings
   EMAIL_FROM_ADDRESS: z.string().email('Invalid from email address'),
   EMAIL_FROM_NAME: z.string().default('ExtraHand'),
@@ -50,7 +50,16 @@ const envSchema = z.object({
   SMTP_PORT_ORG: z.string().transform(Number).optional(), // defaults to SMTP_PORT if not set
   EMAIL_FROM_ADDRESS_ORG: z.string().email('Invalid org from email').optional(),
   EMAIL_FROM_NAME_ORG: z.string().optional(),
-  
+
+  /**
+   * Temporary: route platform emails (company admin, demo, org-created) via org SMTP
+   * until support@trizenhr.com credentials are fixed. Set to false to restore trizenhr.com sender.
+   */
+  SMTP_PLATFORM_USE_ORG: z
+    .string()
+    .optional()
+    .transform((val) => val === 'true' || val === '1'),
+
   // Application URLs
   WEB_APP_URL: z.string().url('Invalid web app URL').default('https://extrahand.in'),
   MOBILE_APP_DEEP_LINK: z.string().default('extrahand://'),
@@ -58,10 +67,10 @@ const envSchema = z.object({
 
   // TrizenHR support mailbox for onboarding notifications
   TRIZEN_SUPPORT_EMAIL: z.string().email('Invalid Trizen support email').default('support@trizenventures.com'),
-  
+
   // Logging
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
-  
+
   // CORS
   CORS_ORIGIN: z.string().optional(),
 
@@ -74,23 +83,32 @@ export function validateEnv() {
   loadEnv();
   try {
     const env = envSchema.parse(process.env);
-    
+
     // Validate provider-specific requirements
     if (env.EMAIL_PROVIDER === 'sendgrid' && !env.SENDGRID_API_KEY) {
       throw new Error('SENDGRID_API_KEY is required when EMAIL_PROVIDER is sendgrid');
     }
-    
+
     if (env.EMAIL_PROVIDER === 'ses' && (!env.AWS_ACCESS_KEY_ID || !env.AWS_SECRET_ACCESS_KEY)) {
       throw new Error('AWS credentials are required when EMAIL_PROVIDER is ses');
     }
-    
-    // For Microsoft SMTP, ensure FROM address matches SMTP user
-    if (env.EMAIL_PROVIDER === 'smtp' && env.SMTP_HOST.toLowerCase().includes('office365')) {
+
+    if (env.SMTP_PLATFORM_USE_ORG) {
+      if (!env.SMTP_USER_ORG || !env.SMTP_PASS_ORG || !env.EMAIL_FROM_ADDRESS_ORG) {
+        throw new Error(
+          'SMTP_PLATFORM_USE_ORG=true requires SMTP_USER_ORG, SMTP_PASS_ORG, and EMAIL_FROM_ADDRESS_ORG'
+        );
+      }
+      console.info(
+        'ℹ️  SMTP_PLATFORM_USE_ORG enabled — platform emails send via',
+        env.EMAIL_FROM_ADDRESS_ORG
+      );
+    } else if (env.EMAIL_PROVIDER === 'smtp' && env.SMTP_HOST.toLowerCase().includes('office365')) {
       if (env.EMAIL_FROM_ADDRESS !== env.SMTP_USER) {
         console.warn('⚠️  Warning: For Microsoft/Office365, EMAIL_FROM_ADDRESS should match SMTP_USER');
       }
     }
-    
+
     return env;
   } catch (error) {
     console.error('❌ Environment validation failed:');
