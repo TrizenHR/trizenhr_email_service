@@ -373,7 +373,6 @@ export class EmailService {
     platformName?: string;
     name?: string;
   }) {
-    const env = this.getEnv();
     const normalizedRole = this.normalizeRole(params.role);
     const platformName = params.platformName || 'TrizenHR Demo';
     const roleLabel = this.getRoleLabel(normalizedRole);
