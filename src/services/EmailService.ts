@@ -439,4 +439,25 @@ export class EmailService {
       metadata: { type: 'password_reset' },
     });
   }
+
+  static async sendBirthdayEmail(params: {
+    email: string;
+    name?: string;
+    organizationName?: string;
+    platformName?: string;
+  }) {
+    const platformName = params.platformName || 'TrizenHR';
+
+    return this.sendEmail({
+      to: params.email,
+      subject: '',
+      template: 'birthday',
+      data: {
+        name: params.name || params.email.split('@')[0],
+        organizationName: params.organizationName,
+        platformName,
+      },
+      metadata: { type: 'birthday' },
+    });
+  }
 }

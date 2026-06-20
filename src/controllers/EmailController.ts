@@ -265,6 +265,40 @@ export class EmailController {
   });
 
   /**
+   * Send birthday greeting email.
+   * POST /api/v1/email/birthday
+   */
+  static sendBirthdayEmail = asyncHandler(async (req: Request, res: Response) => {
+    const { email, name, organizationName, platformName } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        error: 'email is required',
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Birthday email queued for sending',
+    });
+
+    EmailService.sendBirthdayEmail({
+      email,
+      name,
+      organizationName,
+      platformName,
+    }).catch((error: unknown) => {
+      logger.error('Background birthday email send failed', {
+        email,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    });
+
+    return;
+  });
+
+  /**
    * Health check with provider verification
    * GET /api/v1/email/health
    */

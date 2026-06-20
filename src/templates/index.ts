@@ -4,13 +4,16 @@ import { EmailTemplate } from '../types';
 import { passwordResetTemplate } from './passwordReset';
 import { organizationCreatedSupportTemplate } from './organizationCreatedSupport';
 import { trizenRoleInviteTemplate } from './trizenRoleInvite';
+
 import { trizenDemoInviteTemplate } from './trizenDemoInvite';
+import { birthdayTemplate } from './birthday';
 
 export const templates: Record<string, EmailTemplate> = {
   password_reset: passwordResetTemplate,
   organization_created_support: organizationCreatedSupportTemplate,
   trizen_role_invite: trizenRoleInviteTemplate,
   trizen_demo_invite: trizenDemoInviteTemplate,
+  birthday: birthdayTemplate,
 };
 
 export function getTemplate(name: string): EmailTemplate | undefined {

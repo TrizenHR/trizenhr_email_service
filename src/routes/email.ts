@@ -12,6 +12,7 @@ router.post('/organization-created', EmailController.sendOrganizationCreatedEmai
 router.post('/role-invitation', EmailController.sendRoleInvitationEmail);
 router.post('/demo-invitation', EmailController.sendDemoInvitationEmail);
 router.post('/password-reset', EmailController.sendPasswordResetEmail);
+router.post('/birthday', EmailController.sendBirthdayEmail);
 router.get('/health', EmailController.healthCheck);
 
 export default router;
