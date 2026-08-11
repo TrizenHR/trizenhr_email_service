@@ -133,11 +133,20 @@ export class SMTPProvider {
       };
     }
 
-    // Primary sender (support@trizenhr.com)
-    const primaryAddress = this.isMicrosoft ? env.SMTP_USER : fromEmail;
+    // Platform sender — must use trizenhr mailbox (EMAIL_FROM_ADDRESS / SMTP_USER)
+    const platformAddress = env.EMAIL_FROM_ADDRESS;
+    if (
+      this.isMicrosoft &&
+      env.SMTP_USER.toLowerCase() !== platformAddress.toLowerCase()
+    ) {
+      logger.warn(
+        'SMTP_USER does not match EMAIL_FROM_ADDRESS — Microsoft may send from the SMTP_USER mailbox',
+        { smtpUser: env.SMTP_USER, emailFromAddress: platformAddress, requestedFrom: fromEmail }
+      );
+    }
     return {
       transport: this.transporter,
-      senderAddress: primaryAddress,
+      senderAddress: platformAddress,
       senderName: env.EMAIL_FROM_NAME,
     };
   }
@@ -147,8 +156,15 @@ export class SMTPProvider {
       const { transport, senderAddress, senderName } =
         this.resolveTransporter(payload.from.email);
 
-      const emailDomain = senderAddress.split('@')[1] || 'trizenhr.com';
-      const messageId = `<${Date.now()}-${Math.random().toString(36).substring(2, 15)}@${emailDomain}>`;
+      const isMicrosoftSend =
+        transport === this.transporter
+          ? this.isMicrosoft
+          : (this.env.SMTP_HOST_ORG || this.env.SMTP_HOST)
+              .toLowerCase()
+              .includes('office365') ||
+            (this.env.SMTP_HOST_ORG || this.env.SMTP_HOST)
+              .toLowerCase()
+              .includes('outlook');
 
       // Convert attachments to nodemailer format with CID support
       const attachments = payload.attachments?.map(att => {
@@ -187,8 +203,13 @@ export class SMTPProvider {
         headers: {
           'X-Mailer': 'TrizenHR Email Service',
           'X-Priority': '3',
-          'Message-ID': messageId,
-          'Return-Path': senderAddress,
+          // Let Exchange generate Message-ID / envelope sender — custom values can hurt deliverability
+          ...(isMicrosoftSend
+            ? {}
+            : {
+                'Message-ID': `<${Date.now()}-${Math.random().toString(36).substring(2, 15)}@${senderAddress.split('@')[1] || 'trizenhr.com'}>`,
+                'Return-Path': senderAddress,
+              }),
         },
       };
 
@@ -217,16 +238,24 @@ export class SMTPProvider {
         rejected: info.rejected,
       };
     } catch (error: any) {
+      const { senderAddress } = this.resolveTransporter(payload.from.email);
+
       logger.error('SMTP send error', {
         error: error.message,
         code: error.code,
         command: error.command,
+        from: senderAddress,
+        to: payload.to,
       });
 
       if (this.isMicrosoft) {
         if (error.code === 'EAUTH') {
+          const mailboxHint =
+            senderAddress === this.env.EMAIL_FROM_ADDRESS_ORG
+              ? `Organisation mailbox (${this.env.SMTP_USER_ORG}). Update SMTP_PASS_ORG with a Microsoft 365 app password for that account.`
+              : `Platform mailbox (${this.env.SMTP_USER}). Update SMTP_PASS with a Microsoft 365 app password.`;
           throw new Error(
-            'Microsoft authentication failed. Check email/password or use App Password',
+            `Microsoft authentication failed for ${senderAddress}. ${mailboxHint}`,
           );
         } else if (
           error.code === 'ETIMEDOUT' ||
@@ -242,30 +271,47 @@ export class SMTPProvider {
     }
   }
 
-  async verify(): Promise<boolean> {
+  async verify(): Promise<{ primary: boolean; org: boolean }> {
+    const result = { primary: false, org: false };
+
     try {
       await this.transporter.verify();
-      logger.info('Primary SMTP connection verified successfully', {
+      result.primary = true;
+      logger.info('Primary SMTP verified (support@trizenhr.com)', {
         host: this.env.SMTP_HOST,
         user: this.env.SMTP_USER,
       });
-
-      if (this.orgTransporter) {
-        await this.orgTransporter.verify();
-        logger.info('Org SMTP connection verified successfully', {
-          host: this.env.SMTP_HOST,
-          user: this.env.SMTP_USER_ORG,
-        });
-      }
-
-      return true;
     } catch (error: any) {
-      logger.error('SMTP verification failed', {
+      logger.error('Primary SMTP verification FAILED', {
+        user: this.env.SMTP_USER,
         error: error.message,
         code: error.code,
       });
-      return false;
     }
+
+    if (this.orgTransporter && this.env.SMTP_USER_ORG) {
+      try {
+        await this.orgTransporter.verify();
+        result.org = true;
+        logger.info('Org SMTP verified (support@trizenventures.com)', {
+          user: this.env.SMTP_USER_ORG,
+        });
+      } catch (error: any) {
+        logger.error(
+          'Org SMTP verification FAILED — employee/HR/manager invites will not send',
+          {
+            user: this.env.SMTP_USER_ORG,
+            error: error.message,
+            code: error.code,
+            hint: 'Set SMTP_PASS_ORG to a valid Microsoft 365 app password for support@trizenventures.com',
+          }
+        );
+      }
+    } else {
+      logger.warn('Org SMTP not configured — staff invites cannot be sent');
+    }
+
+    return result;
   }
 
   close(): void {

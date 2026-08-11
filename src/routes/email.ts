@@ -10,8 +10,10 @@ router.use(serviceAuthMiddleware);
 // TrizenHR email routes
 router.post('/organization-created', EmailController.sendOrganizationCreatedEmail);
 router.post('/role-invitation', EmailController.sendRoleInvitationEmail);
+router.post('/demo-invitation', EmailController.sendDemoInvitationEmail);
 router.post('/password-reset', EmailController.sendPasswordResetEmail);
 router.post('/send-otp', EmailController.sendOtpEmail);
+router.post('/birthday', EmailController.sendBirthdayEmail);
 router.get('/health', EmailController.healthCheck);
 
 export default router;

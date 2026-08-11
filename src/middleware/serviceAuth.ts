@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { validateEnv } from '../config/env';
+import logger from '../config/logger';
 
 /**
  * Service-to-Service Authentication Middleware
@@ -25,6 +26,10 @@ export function serviceAuthMiddleware(
     const providedToken = req.headers['x-service-auth'] as string;
 
     if (!providedToken) {
+      logger.warn('[EmailService] Auth rejected: missing X-Service-Auth', {
+        method: req.method,
+        path: req.path,
+      });
       res.status(401).json({
         success: false,
         error: 'Service authentication required',
@@ -34,6 +39,10 @@ export function serviceAuthMiddleware(
     }
 
     if (providedToken !== serviceAuthToken) {
+      logger.warn('[EmailService] Auth rejected: token mismatch', {
+        method: req.method,
+        path: req.path,
+      });
       res.status(403).json({
         success: false,
         error: 'Invalid service authentication token',
@@ -41,6 +50,11 @@ export function serviceAuthMiddleware(
       });
       return;
     }
+
+    logger.info('[EmailService] Service auth OK', {
+      path: req.path,
+      serviceName: req.headers['x-service-name'],
+    });
 
     // Attach service name for logging
     const serviceName = req.headers['x-service-name'] as string;

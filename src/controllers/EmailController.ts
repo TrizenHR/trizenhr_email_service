@@ -19,6 +19,8 @@ export class EmailController {
       createdByEmail,
       platformName,
       supportEmail,
+      platformSupportEmail,
+      companyAdminRole,
     } = req.body;
 
     if (!organizationName || !companyAdminEmail || !companyAdminInviteLink || !inviteExpiresAt) {
@@ -51,6 +53,8 @@ export class EmailController {
       createdByEmail,
       platformName,
       supportEmail,
+      platformSupportEmail: platformSupportEmail || supportEmail,
+      companyAdminRole: companyAdminRole || 'company_admin',
     }).catch((error: any) => {
       logger.error('Background organization-created email flow failed', {
         organizationName,
@@ -79,7 +83,25 @@ export class EmailController {
       supportEmail,
     } = req.body;
 
+    logger.info('[EmailService] POST /role-invitation received', {
+      email,
+      role,
+      organizationName: organizationName || '(not provided)',
+      inviterName,
+      inviteLinkPreview: typeof inviteLink === 'string' ? inviteLink.slice(0, 80) : undefined,
+      serviceName: req.headers['x-service-name'],
+    });
+
+    const staffRoles = ['hr_admin', 'manager', 'employee'];
+    if (staffRoles.includes(String(role).toLowerCase()) && !organizationName?.trim()) {
+      logger.warn('[EmailService] Staff invite missing organizationName — email will show generic org copy', {
+        email,
+        role,
+      });
+    }
+
     if (!email || !role || !inviteLink || !expiresAt) {
+      logger.warn('[EmailService] role-invitation validation failed: missing fields');
       return res.status(400).json({
         success: false,
         error: 'email, role, inviteLink, and expiresAt are required'
@@ -94,12 +116,7 @@ export class EmailController {
       });
     }
 
-    res.json({
-      success: true,
-      message: 'Role invitation email queued for sending'
-    });
-
-    EmailService.sendTrizenRoleInvitationEmail({
+    const result = await EmailService.sendTrizenRoleInvitationEmail({
       email,
       role,
       inviteLink,
@@ -109,15 +126,98 @@ export class EmailController {
       platformName,
       name,
       supportEmail,
-    }).catch((error: any) => {
-      logger.error('Background role invitation email send failed', {
-        email,
-        role,
-        error: error.message
-      });
     });
 
-    return;
+    if (!result.success) {
+      logger.error('[EmailService] role-invitation SMTP failed', {
+        email,
+        role,
+        error: result.error,
+      });
+      return res.status(500).json({
+        success: false,
+        error: result.error || 'Failed to send invitation email',
+      });
+    }
+
+    logger.info('[EmailService] role-invitation sent successfully', {
+      email,
+      role,
+      messageId: result.messageId,
+    });
+
+    return res.json({
+      success: true,
+      message: 'Role invitation email sent',
+      messageId: result.messageId,
+    });
+  });
+
+  /**
+   * Send demo invitation email for TrizenHR sales demos.
+   * POST /api/v1/email/demo-invitation
+   */
+  static sendDemoInvitationEmail = asyncHandler(async (req: Request, res: Response) => {
+    const {
+      email,
+      role,
+      inviteLink,
+      inviteExpiresAt,
+      demoAccessTtlDays,
+      companyName,
+      inviterName,
+      platformName,
+      name,
+    } = req.body;
+
+    if (!email || !role || !inviteLink || !inviteExpiresAt || !companyName) {
+      return res.status(400).json({
+        success: false,
+        error:
+          'email, role, inviteLink, inviteExpiresAt, and companyName are required',
+      });
+    }
+
+    const inviteExpiryDate = new Date(inviteExpiresAt);
+    if (Number.isNaN(inviteExpiryDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        error: 'inviteExpiresAt must be a valid date',
+      });
+    }
+
+    const ttlDays = Number(demoAccessTtlDays);
+    if (!Number.isFinite(ttlDays) || ttlDays < 1) {
+      return res.status(400).json({
+        success: false,
+        error: 'demoAccessTtlDays must be a positive number',
+      });
+    }
+
+    const result = await EmailService.sendTrizenDemoInvitationEmail({
+      email,
+      role,
+      inviteLink,
+      inviteExpiresAt: inviteExpiryDate,
+      demoAccessTtlDays: ttlDays,
+      companyName,
+      inviterName,
+      platformName,
+      name,
+    });
+
+    if (!result.success) {
+      return res.status(500).json({
+        success: false,
+        error: result.error || 'Failed to send demo invitation email',
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Demo invitation email sent',
+      messageId: result.messageId,
+    });
   });
 
   /**
@@ -194,6 +294,33 @@ export class EmailController {
       logger.error('Background OTP email send failed', {
         email,
         error: error.message
+   * Send birthday greeting email.
+   * POST /api/v1/email/birthday
+   */
+  static sendBirthdayEmail = asyncHandler(async (req: Request, res: Response) => {
+    const { email, name, organizationName, platformName } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        error: 'email is required',
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Birthday email queued for sending',
+    });
+
+    EmailService.sendBirthdayEmail({
+      email,
+      name,
+      organizationName,
+      platformName,
+    }).catch((error: unknown) => {
+      logger.error('Background birthday email send failed', {
+        email,
+        error: error instanceof Error ? error.message : String(error),
       });
     });
 
