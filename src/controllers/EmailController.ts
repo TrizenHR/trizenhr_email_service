@@ -165,6 +165,42 @@ export class EmailController {
   });
 
   /**
+   * Send OTP verification code email for trial registration
+   * POST /api/v1/email/send-otp
+   */
+  static sendOtpEmail = asyncHandler(async (req: Request, res: Response) => {
+    const { email, otp, name, expiresInMinutes, platformName } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({
+        success: false,
+        error: 'email and otp are required'
+      });
+    }
+
+    // Respond immediately, send in background
+    res.json({
+      success: true,
+      message: 'OTP email queued for sending'
+    });
+
+    EmailService.sendOtpEmail(
+      email,
+      otp,
+      name,
+      expiresInMinutes,
+      platformName
+    ).catch((error: any) => {
+      logger.error('Background OTP email send failed', {
+        email,
+        error: error.message
+      });
+    });
+
+    return;
+  });
+
+  /**
    * Health check with provider verification
    * GET /api/v1/email/health
    */

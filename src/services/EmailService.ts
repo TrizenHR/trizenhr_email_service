@@ -315,4 +315,56 @@ export class EmailService {
       metadata: { type: 'password_reset' },
     });
   }
+
+  static async sendOtpEmail(
+    email: string,
+    otp: string,
+    name?: string,
+    expiresInMinutes?: number,
+    platformName?: string
+  ) {
+    const finalPlatformName = platformName || 'TrizenHR';
+    const recipientName = name || email.split('@')[0];
+    const expiry = expiresInMinutes || 10;
+
+    // Build a clean inline HTML email
+    const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family:Arial,sans-serif;background:#f5f5f5;margin:0;padding:0;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:40px 0;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+        <tr><td style="background:#4f46e5;padding:28px 40px;">
+          <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;letter-spacing:-0.5px;">${finalPlatformName}</h1>
+        </td></tr>
+        <tr><td style="padding:36px 40px;">
+          <p style="margin:0 0 8px;font-size:15px;color:#374151;">Hi ${recipientName},</p>
+          <p style="margin:0 0 28px;font-size:15px;color:#6b7280;">Use the verification code below to complete your ${finalPlatformName} registration. It expires in <strong>${expiry} minutes</strong>.</p>
+          <div style="text-align:center;margin:0 0 28px;">
+            <div style="display:inline-block;background:#f3f4f6;border-radius:10px;padding:18px 40px;">
+              <span style="font-size:38px;font-weight:900;letter-spacing:12px;color:#4f46e5;font-family:monospace;">${otp}</span>
+            </div>
+          </div>
+          <p style="margin:0 0 8px;font-size:13px;color:#9ca3af;text-align:center;">This code is valid for ${expiry} minutes. Do not share it with anyone.</p>
+          <hr style="border:none;border-top:1px solid #e5e7eb;margin:28px 0;">
+          <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">If you didn't request this, you can safely ignore this email.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+    const text = `Your ${finalPlatformName} verification code is: ${otp}\n\nThis code expires in ${expiry} minutes. Do not share it with anyone.`;
+
+    return this.sendEmail({
+      to: email,
+      subject: `${otp} is your ${finalPlatformName} verification code`,
+      html,
+      text,
+      metadata: { type: 'otp_verification' },
+    });
+  }
 }

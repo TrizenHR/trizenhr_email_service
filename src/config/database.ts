@@ -1,62 +1,127 @@
+import dns from 'node:dns';
 import mongoose from 'mongoose';
 import logger from './logger';
- 
+
+// Temporary workaround for DNS resolution issues
+dns.setServers(['8.8.8.8', '8.8.4.4']);
+
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 5000;
+
 let isConnected = false;
 
-export async function connectMongo(uri: string, dbName: string): Promise<typeof mongoose.connection> {
+export async function connectMongo(
+  uri: string,
+  dbName: string
+): Promise<typeof mongoose.connection> {
   if (!uri) {
     throw new Error('Missing MONGODB_URI');
   }
-   
-  if (isConnected) {
+
+  if (isConnected && mongoose.connection.readyState === 1) {
     return mongoose.connection;
   }
-  
-     
+
   mongoose.set('strictQuery', true);
-  
-  try {
-    const connectionOptions = {
-      dbName,
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 45000,
-      connectTimeoutMS: 10000,
-      maxPoolSize: 10,
-      minPoolSize: 2,
-    };
-    
-    logger.info('🔌 Attempting to connect to MongoDB...');
-    logger.info(`📊 Database: ${dbName}`);
-    
-    await mongoose.connect(uri, connectionOptions);
-    
-    isConnected = true;
-    logger.info('✅ MongoDB connected successfully');
-    logger.info(`📊 Connected to database: ${mongoose.connection.db?.databaseName || dbName}`);
-    
-    // Handle connection events
-    mongoose.connection.on('error', (err) => {
-      logger.error('❌ MongoDB connection error:', err);
-      isConnected = false;
-    });
-    
-    mongoose.connection.on('disconnected', () => {
-      logger.warn('⚠️ MongoDB disconnected');
-      isConnected = false;
-    });
-    
-    mongoose.connection.on('reconnected', () => {
-      logger.info('✅ MongoDB reconnected');
-      isConnected = true;
-    });
-    
-    return mongoose.connection;
-  } catch (error) {
-    logger.error('❌ Failed to connect to MongoDB:', error);
-    isConnected = false;
-    throw error;
+
+  // Auto-fix malformed URI if detected
+  if (uri.includes('appName=Cluster0w=majority')) {
+    uri = uri.replace(
+      /appName=Cluster0w=majority&appName=Cluster0/,
+      'appName=Cluster0'
+    );
+
+    logger.warn('⚠️ Detected malformed MongoDB URI, auto-fixing...');
   }
+
+  const connectionOptions = {
+    dbName,
+    serverSelectionTimeoutMS: 10000,
+    connectTimeoutMS: 10000,
+    socketTimeoutMS: 45000,
+    maxPoolSize: 10,
+    minPoolSize: 2,
+  };
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      logger.info(
+        `🔌 Connecting to MongoDB (Attempt ${attempt}/${MAX_RETRIES})...`
+      );
+
+      const conn = await mongoose.connect(uri, connectionOptions);
+
+      isConnected = true;
+
+      logger.info(`✅ MongoDB Connected: ${conn.connection.host}`);
+      logger.info(
+        `📊 Database: ${
+          conn.connection.db?.databaseName || connectionOptions.dbName
+        }`
+      );
+
+      return mongoose.connection;
+    } catch (error) {
+      const err = error as Error;
+
+      isConnected = false;
+
+      logger.error(
+        `❌ MongoDB connection failed (Attempt ${attempt}/${MAX_RETRIES}): ${err.message}`
+      );
+
+      const isDnsError =
+        err.message.includes('querySrv') ||
+        err.message.includes('ECONNREFUSED') ||
+        err.message.includes('ENOTFOUND') ||
+        err.message.includes('ETIMEOUT');
+
+      if (isDnsError) {
+        logger.error(`
+→ DNS resolution failed.
+Check:
+• Internet connection
+• Firewall / VPN
+• DNS settings
+• Try Google's DNS (8.8.8.8 / 8.8.4.4)
+        `);
+      }
+
+      if (attempt < MAX_RETRIES) {
+        logger.info(`⏳ Retrying in ${RETRY_DELAY_MS / 1000}s...`);
+        await new Promise((resolve) =>
+          setTimeout(resolve, RETRY_DELAY_MS)
+        );
+      } else {
+        logger.error('❌ MongoDB connection failed after all retries.');
+        throw err;
+      }
+    }
+  }
+
+  throw new Error('MongoDB connection failed');
 }
+
+// Connection Events
+mongoose.connection.on('connected', () => {
+  isConnected = true;
+  logger.info('✅ MongoDB connection established');
+});
+
+mongoose.connection.on('error', (err) => {
+  isConnected = false;
+  logger.error('❌ MongoDB connection error:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+  isConnected = false;
+  logger.warn('⚠️ MongoDB disconnected');
+});
+
+mongoose.connection.on('reconnected', () => {
+  isConnected = true;
+  logger.info('✅ MongoDB reconnected');
+});
 
 export async function disconnectMongo(): Promise<void> {
   if (isConnected) {
@@ -68,12 +133,5 @@ export async function disconnectMongo(): Promise<void> {
 
 export function getConnectionStatus(): boolean {
   const readyState = mongoose.connection.readyState;
-  const connected = isConnected && readyState === 1;
-  
-  if (!connected && readyState !== 0) {
-    const states = ['disconnected', 'connected', 'connecting', 'disconnecting'];
-    logger.warn(`⚠️ MongoDB connection state: ${states[readyState] || 'unknown'} (${readyState})`);
-  }
-  
-  return connected;
+  return isConnected && readyState === 1;
 }

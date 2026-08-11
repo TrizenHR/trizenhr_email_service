@@ -11,6 +11,7 @@ router.use(serviceAuthMiddleware);
 router.post('/organization-created', EmailController.sendOrganizationCreatedEmail);
 router.post('/role-invitation', EmailController.sendRoleInvitationEmail);
 router.post('/password-reset', EmailController.sendPasswordResetEmail);
+router.post('/send-otp', EmailController.sendOtpEmail);
 router.get('/health', EmailController.healthCheck);
 
 export default router;
