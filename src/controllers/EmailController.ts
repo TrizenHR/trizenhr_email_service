@@ -293,7 +293,14 @@ export class EmailController {
     ).catch((error: any) => {
       logger.error('Background OTP email send failed', {
         email,
-        error: error.message
+        error: error.message,
+      });
+    });
+
+    return;
+  });
+
+  /**
    * Send birthday greeting email.
    * POST /api/v1/email/birthday
    */

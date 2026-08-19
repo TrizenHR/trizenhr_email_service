@@ -489,6 +489,9 @@ export class EmailService {
       html,
       text,
       metadata: { type: 'otp_verification' },
+    });
+  }
+
   static async sendBirthdayEmail(params: {
     email: string;
     name?: string;
