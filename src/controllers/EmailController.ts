@@ -278,26 +278,35 @@ export class EmailController {
       });
     }
 
-    // Respond immediately, send in background
-    res.json({
-      success: true,
-      message: 'OTP email queued for sending'
-    });
-
-    EmailService.sendOtpEmail(
+    const result = await EmailService.sendOtpEmail(
       email,
       otp,
       name,
       expiresInMinutes,
       platformName
-    ).catch((error: any) => {
-      logger.error('Background OTP email send failed', {
+    );
+
+    if (!result.success) {
+      logger.error('OTP email send failed', {
         email,
-        error: error.message,
+        error: result.error,
       });
+      return res.status(500).json({
+        success: false,
+        error: result.error || 'Failed to send OTP email',
+      });
+    }
+
+    logger.info('OTP email sent successfully', {
+      email,
+      messageId: result.messageId,
     });
 
-    return;
+    return res.json({
+      success: true,
+      message: 'OTP email sent',
+      messageId: result.messageId,
+    });
   });
 
   /**
