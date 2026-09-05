@@ -2,6 +2,7 @@ import { EmailTemplate } from '../types';
 
 export interface OrganizationCreatedSupportTemplateData {
   organizationName: string;
+  subdomain?: string;
   companyAdminEmail: string;
   companyAdminName?: string;
   createdByName?: string;
@@ -53,6 +54,10 @@ export const organizationCreatedSupportTemplate: EmailTemplate = {
                   <td style="padding:8px 0;color:#0f172a;font-size:14px;">${data.companyAdminName ? `${data.companyAdminName} (${data.companyAdminEmail})` : data.companyAdminEmail}</td>
                 </tr>
                 <tr>
+                  <td style="padding:8px 0;color:#64748b;font-size:13px;">Subdomain to add</td>
+                  <td style="padding:8px 0;color:#0f172a;font-size:14px;font-weight:600;">${data.subdomain || 'Not provided'}</td>
+                </tr>
+                <tr>
                   <td style="padding:8px 0;color:#64748b;font-size:13px;">Created By</td>
                   <td style="padding:8px 0;color:#0f172a;font-size:14px;">${data.createdByName || 'System Admin'}${data.createdByEmail ? ` (${data.createdByEmail})` : ''}</td>
                 </tr>
@@ -82,6 +87,7 @@ ${platformName} SYSTEM NOTIFICATION
 New organization created.
 
 Organization: ${data.organizationName}
+Subdomain to add: ${data.subdomain || 'Not provided'}
 Company Admin: ${data.companyAdminName ? `${data.companyAdminName} (${data.companyAdminEmail})` : data.companyAdminEmail}
 Created By: ${data.createdByName || 'System Admin'}${data.createdByEmail ? ` (${data.createdByEmail})` : ''}
 Created At: ${createdAt}

@@ -11,6 +11,7 @@ export class EmailController {
   static sendOrganizationCreatedEmail = asyncHandler(async (req: Request, res: Response) => {
     const {
       organizationName,
+      subdomain,
       companyAdminEmail,
       companyAdminInviteLink,
       inviteExpiresAt,
@@ -45,6 +46,7 @@ export class EmailController {
 
     EmailService.sendOrganizationCreatedEmails({
       organizationName,
+      subdomain,
       companyAdminEmail,
       companyAdminInviteLink,
       inviteExpiresAt: inviteExpiryDate,

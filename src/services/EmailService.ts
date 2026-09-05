@@ -235,6 +235,7 @@ export class EmailService {
 
   static async sendOrganizationCreatedEmails(params: {
     organizationName: string;
+    subdomain?: string;
     companyAdminEmail: string;
     companyAdminInviteLink: string;
     inviteExpiresAt: Date;
@@ -266,6 +267,7 @@ export class EmailService {
       template: 'organization_created_support',
       data: {
         organizationName: params.organizationName,
+        subdomain: params.subdomain,
         companyAdminEmail: params.companyAdminEmail,
         companyAdminName: params.companyAdminName,
         createdByName: params.createdByName,
