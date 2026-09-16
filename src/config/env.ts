@@ -52,8 +52,8 @@ const envSchema = z.object({
   EMAIL_FROM_NAME_ORG: z.string().optional(),
 
   /**
-   * Temporary: route platform emails (company admin, demo, org-created) via org SMTP
-   * until support@trizenhr.com credentials are fixed. Set to false to restore trizenhr.com sender.
+   * All invitation emails must be sent from the TrizenHR support mailbox.
+   * This switch is intentionally kept off so org staff invites also use support@trizenhr.com.
    */
   SMTP_PLATFORM_USE_ORG: z
     .string()

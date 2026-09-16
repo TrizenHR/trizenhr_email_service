@@ -14,6 +14,7 @@ router.post('/demo-invitation', EmailController.sendDemoInvitationEmail);
 router.post('/password-reset', EmailController.sendPasswordResetEmail);
 router.post('/send-otp', EmailController.sendOtpEmail);
 router.post('/birthday', EmailController.sendBirthdayEmail);
+router.post('/attendance-irregularity', EmailController.sendAttendanceIrregularityEmail);
 router.get('/health', EmailController.healthCheck);
 
 export default router;

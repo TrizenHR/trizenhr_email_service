@@ -345,6 +345,38 @@ export class EmailController {
     return;
   });
 
+  static sendAttendanceIrregularityEmail = asyncHandler(async (req: Request, res: Response) => {
+    const { recipients, employeeName, employeeEmail, organizationName, date, status, details, platformName } = req.body;
+
+    if (!Array.isArray(recipients) || recipients.length === 0 || !employeeName || !date || !status) {
+      return res.status(400).json({
+        success: false,
+        error: 'recipients, employeeName, date, and status are required',
+      });
+    }
+
+    res.json({ success: true, message: 'Attendance irregularity email queued for sending' });
+
+    EmailService.sendAttendanceIrregularityEmail({
+      recipients,
+      employeeName,
+      employeeEmail,
+      organizationName,
+      date,
+      status,
+      details,
+      platformName,
+    }).catch((error: unknown) => {
+      logger.error('Background attendance irregularity email send failed', {
+        employeeName,
+        date,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    });
+
+    return;
+  });
+
   /**
    * Health check with provider verification
    * GET /api/v1/email/health

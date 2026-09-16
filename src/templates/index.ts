@@ -7,6 +7,7 @@ import { trizenRoleInviteTemplate } from './trizenRoleInvite';
 
 import { trizenDemoInviteTemplate } from './trizenDemoInvite';
 import { birthdayTemplate } from './birthday';
+import { attendanceIrregularityTemplate } from './attendanceIrregularity';
 
 export const templates: Record<string, EmailTemplate> = {
   password_reset: passwordResetTemplate,
@@ -14,6 +15,7 @@ export const templates: Record<string, EmailTemplate> = {
   trizen_role_invite: trizenRoleInviteTemplate,
   trizen_demo_invite: trizenDemoInviteTemplate,
   birthday: birthdayTemplate,
+  attendance_irregularity: attendanceIrregularityTemplate,
 };
 
 export function getTemplate(name: string): EmailTemplate | undefined {

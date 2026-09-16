@@ -98,30 +98,23 @@ export class EmailService {
       }
 
       // ── Sender routing ────────────────────────────────────────────────────
-      // HR / Manager / Employee invitations  → support@trizenventures.com (org SMTP)
-      // Company Admin / org onboarding / platform notifications → support@trizenhr.com
+      // All invitation and onboarding emails use the TrizenHR support mailbox.
+      // Do not switch to the org support address for any invite flow.
       const normalizedRole = options.metadata?.role
         ? this.normalizeRole(String(options.metadata.role))
         : '';
-      const orgStaffRoles = new Set(['hr_admin', 'manager', 'employee']);
-      let useOrgSender =
-        options.metadata?.type === 'trizen_demo_invite' ||
-        (options.metadata?.type === 'trizen_role_invite' &&
-          orgStaffRoles.has(normalizedRole));
-
-      if (env.SMTP_PLATFORM_USE_ORG) {
-        useOrgSender = true;
-      }
+      const useOrgSender = false;
 
       let fromAddress = env.EMAIL_FROM_ADDRESS;
       let fromName = env.EMAIL_FROM_NAME;
       let replyTo = env.EMAIL_REPLY_TO || env.EMAIL_FROM_ADDRESS;
 
       if (useOrgSender) {
+        // Kept as a defensive fallback only; current policy is to always use support@trizenhr.com.
         if (!env.EMAIL_FROM_ADDRESS_ORG || !env.SMTP_USER_ORG || !env.SMTP_PASS_ORG) {
           throw new Error(
             'Organisation email sender is not configured (EMAIL_FROM_ADDRESS_ORG, SMTP_USER_ORG, SMTP_PASS_ORG). ' +
-              'HR/Manager/Employee invites must be sent from support@trizenventures.com.'
+              'TrizenHR invites must be sent from support@trizenhr.com.'
           );
         }
         fromAddress = env.EMAIL_FROM_ADDRESS_ORG;
@@ -512,6 +505,28 @@ export class EmailService {
         platformName,
       },
       metadata: { type: 'birthday' },
+    });
+  }
+
+  static async sendAttendanceIrregularityEmail(params: {
+    recipients: string[];
+    employeeName: string;
+    employeeEmail?: string;
+    organizationName?: string;
+    date: string;
+    status: string;
+    details?: Record<string, string | number | undefined>;
+    platformName?: string;
+  }) {
+    return this.sendEmail({
+      to: params.recipients,
+      subject: '',
+      template: 'attendance_irregularity',
+      data: {
+        ...params,
+        platformName: params.platformName || 'TrizenHR',
+      },
+      metadata: { type: 'attendance_irregularity' },
     });
   }
 }
